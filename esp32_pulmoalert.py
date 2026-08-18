@@ -26,11 +26,14 @@ from machine import Pin, I2C, ADC, Timer
 WIFI_SSID = "MI_WIFI"
 WIFI_PASS = "MI_CONTRASENA"
 
-# --- Servidor (Marcos) ---
-# IP del computador donde corre sensor_server.py
-SERVER_HOST = "192.168.1.100"
-SERVER_PORT = 5000
-SERVER_URL = f"http://{SERVER_HOST}:{SERVER_PORT}/api/esp32"
+# --- Servidor (Render.com) ---
+# URL del servidor desplegado en Render.com (HTTPS)
+# Si prefieres modo local: cambia a tu IP local, ej: "192.168.1.100" y puerto 5000
+# IMPORTANTE: El firmware MicroPython con urequests necesita soporte SSL (incluido en ESP32-S3 estandar)
+# Si falla la verificacion SSL: https://docs.micropython.org/en/latest/esp32/quickref.html#tls
+SERVER_HOST = "pulmoalert-sensor-server.onrender.com"
+SERVER_PORT = 443
+SERVER_URL = f"https://{SERVER_HOST}/api/esp32"
 
 # Intervalo de muestreo (ms)
 SAMPLE_INTERVAL_MS = 200
@@ -274,11 +277,11 @@ def wifi_status():
         led.value(not led.value())
 
 # ============================================================
-# ENVIO DE DATOS (HTTP POST a Marcos)
+# ENVIO DE DATOS (HTTP POST al servidor en Render.com)
 # ============================================================
 
 def enviar_datos(payload):
-    """Envia JSON por HTTP POST al servidor."""
+    """Envia JSON por HTTP POST al servidor en Render.com (HTTPS)."""
     try:
         headers = {"Content-Type": "application/json"}
         data = ujson.dumps(payload)
