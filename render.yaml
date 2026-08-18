@@ -2,7 +2,7 @@ services:
   - type: web
     name: pulmoalert-sensor-server
     runtime: python
-    buildCommand: echo "No build step needed"
+    buildCommand: pip install -r requirements.txt
     startCommand: python sensor_server.py --port $PORT
     plan: free
     envVars:
