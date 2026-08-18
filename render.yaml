@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: pulmoalert-sensor-server
+    runtime: python
+    buildCommand: echo "No build step needed"
+    startCommand: python sensor_server.py --port $PORT
+    plan: free
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.10"
+    disk:
+      name: data
+      mountPath: /tmp
+      sizeGB: 1
