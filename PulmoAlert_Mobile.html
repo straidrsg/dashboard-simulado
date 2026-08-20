@@ -1,0 +1,986 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>PulmoAlert - Monitoreo Móvil</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🫁</text></svg>">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0a0f1a;
+    --card: #141c2e;
+    --border: #1e2a40;
+    --text: #e2e8f0;
+    --text-dim: #7a8599;
+    --accent: #3b82f6;
+    --green: #22c55e;
+    --yellow: #eab308;
+    --red: #ef4444;
+    --safe: #10b981;
+  }
+
+  * { 
+    margin: 0; 
+    padding: 0; 
+    box-sizing: border-box; 
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html, body {
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    min-height: 100dvh;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ============================================
+     HEADER
+     ============================================ */
+
+  .header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: var(--bg);
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .logo {
+    width: 36px;
+    height: 36px;
+    background: linear-gradient(135deg, var(--accent), #06b6d4);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-weight: 800;
+    color: #fff;
+  }
+
+  .header h1 {
+    font-size: 18px;
+    font-weight: 700;
+    background: linear-gradient(135deg, #60a5fa, #2dd4bf);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--red);
+    animation: pulse 2s infinite;
+  }
+
+  .status-dot.connected { background: var(--green); }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(1.2); }
+  }
+
+  /* ============================================
+     MAIN CONTAINER
+     ============================================ */
+
+  .container {
+    padding: 16px;
+    padding-bottom: 100px;
+    max-width: 480px;
+    margin: 0 auto;
+  }
+
+  /* ============================================
+     HEALTH SCORE - HERO SECTION
+     ============================================ */
+
+  .hero-score {
+    background: var(--card);
+    border-radius: 20px;
+    padding: 24px;
+    text-align: center;
+    margin-bottom: 20px;
+    border: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero-score::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--accent), #06b6d4);
+  }
+
+  .score-ring {
+    position: relative;
+    width: 140px;
+    height: 140px;
+    margin: 0 auto 16px;
+  }
+
+  .score-ring svg {
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+  }
+
+  .score-ring .bg {
+    fill: none;
+    stroke: var(--border);
+    stroke-width: 10;
+  }
+
+  .score-ring .progress {
+    fill: none;
+    stroke: var(--green);
+    stroke-width: 10;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.8s ease, stroke 0.5s ease;
+  }
+
+  .score-value {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+  }
+
+  .score-value .number {
+    font-size: 36px;
+    font-weight: 800;
+    line-height: 1;
+    color: var(--green);
+    transition: color 0.5s ease;
+  }
+
+  .score-value .label {
+    font-size: 11px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 2px;
+  }
+
+  .score-status {
+    font-size: 16px;
+    font-weight: 600;
+    margin-top: 8px;
+    padding: 6px 16px;
+    border-radius: 20px;
+    display: inline-block;
+  }
+
+  .score-status.estable {
+    background: rgba(34, 197, 94, 0.15);
+    color: var(--green);
+  }
+
+  .score-status.moderada {
+    background: rgba(234, 179, 8, 0.15);
+    color: var(--yellow);
+  }
+
+  .score-status.severa {
+    background: rgba(239, 68, 68, 0.15);
+    color: var(--red);
+  }
+
+  /* ============================================
+     ALERT BANNER
+     ============================================ */
+
+  .alert-banner {
+    display: none;
+    padding: 12px 16px;
+    border-radius: 12px;
+    margin-bottom: 16px;
+    font-size: 14px;
+    font-weight: 500;
+    align-items: center;
+    gap: 10px;
+    animation: slideDown 0.3s ease;
+  }
+
+  .alert-banner.show { display: flex; }
+
+  .alert-banner.critical {
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #fca5a5;
+  }
+
+  .alert-banner.warning {
+    background: rgba(234, 179, 8, 0.15);
+    border: 1px solid rgba(234, 179, 8, 0.3);
+    color: #fde047;
+  }
+
+  .alert-banner.success {
+    background: rgba(34, 197, 94, 0.15);
+    border: 1px solid rgba(34, 179, 94, 0.3);
+    color: #86efac;
+  }
+
+  @keyframes slideDown {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ============================================
+     VITAL SIGNS GRID
+     ============================================ */
+
+  .vitals-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .vital-card {
+    background: var(--card);
+    border-radius: 16px;
+    padding: 16px;
+    border: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .vital-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    transition: background 0.5s ease;
+  }
+
+  .vital-card.normal::before { background: var(--green); }
+  .vital-card.warning::before { background: var(--yellow); }
+  .vital-card.danger::before { background: var(--red); }
+
+  .vital-card .icon {
+    font-size: 20px;
+    margin-bottom: 8px;
+  }
+
+  .vital-card .name {
+    font-size: 11px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+  }
+
+  .vital-card .value {
+    font-size: 28px;
+    font-weight: 800;
+    line-height: 1;
+    transition: color 0.5s ease;
+  }
+
+  .vital-card .unit {
+    font-size: 12px;
+    color: var(--text-dim);
+    font-weight: 400;
+  }
+
+  .vital-card .range {
+    font-size: 10px;
+    color: var(--text-dim);
+    margin-top: 6px;
+    padding-top: 6px;
+    border-top: 1px solid var(--border);
+  }
+
+  .vital-card .range .ok { color: var(--green); }
+  .vital-card .range .warn { color: var(--yellow); }
+  .vital-card .range .bad { color: var(--red); }
+
+  /* ============================================
+     BREATHING CHART (SIMPLE)
+     ============================================ */
+
+  .chart-section {
+    background: var(--card);
+    border-radius: 16px;
+    padding: 16px;
+    border: 1px solid var(--border);
+    margin-bottom: 20px;
+  }
+
+  .chart-section .section-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .chart-section .section-title .badge {
+    font-size: 10px;
+    background: rgba(59, 130, 246, 0.2);
+    color: var(--accent);
+    padding: 2px 8px;
+    border-radius: 8px;
+    font-weight: 500;
+  }
+
+  .chart-container {
+    height: 120px;
+    position: relative;
+  }
+
+  /* ============================================
+     SIMPLE ALERTS LIST
+     ============================================ */
+
+  .alerts-section {
+    background: var(--card);
+    border-radius: 16px;
+    padding: 16px;
+    border: 1px solid var(--border);
+    margin-bottom: 20px;
+  }
+
+  .alerts-section .section-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 12px;
+  }
+
+  .alert-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .alert-item:last-child { border-bottom: none; }
+
+  .alert-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-top: 4px;
+    flex-shrink: 0;
+  }
+
+  .alert-dot.red { background: var(--red); box-shadow: 0 0 8px rgba(239, 68, 68, 0.5); }
+  .alert-dot.yellow { background: var(--yellow); box-shadow: 0 0 8px rgba(234, 179, 8, 0.5); }
+  .alert-dot.green { background: var(--green); }
+
+  .alert-content {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .alert-content .title {
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 2px;
+  }
+
+  .alert-content .desc {
+    font-size: 12px;
+    color: var(--text-dim);
+    line-height: 1.4;
+  }
+
+  .alert-content .time {
+    font-size: 10px;
+    color: #5a6477;
+    margin-top: 3px;
+  }
+
+  /* ============================================
+     GOLD STAGE BADGE
+     ============================================ */
+
+  .gold-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(59, 130, 246, 0.2);
+    color: var(--accent);
+    padding: 4px 10px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  /* ============================================
+     BOTTOM NAV (OPTIONAL)
+     ============================================ */
+
+  .bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--card);
+    border-top: 1px solid var(--border);
+    padding: 8px 0;
+    padding-bottom: max(8px, env(safe-area-inset-bottom));
+    display: flex;
+    justify-content: space-around;
+    z-index: 100;
+  }
+
+  .nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 4px 12px;
+    font-size: 10px;
+    color: var(--text-dim);
+    text-decoration: none;
+  }
+
+  .nav-item.active { color: var(--accent); }
+  .nav-item .nav-icon { font-size: 20px; }
+
+  /* ============================================
+     LOADING / ERROR
+     ============================================ */
+
+  .loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    color: var(--text-dim);
+    font-size: 14px;
+    gap: 12px;
+  }
+
+  .loading .spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  .error-banner {
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #fca5a5;
+    padding: 12px 16px;
+    border-radius: 12px;
+    margin-bottom: 16px;
+    font-size: 13px;
+    display: none;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .error-banner.show { display: flex; }
+
+  .error-banner .retry-btn {
+    margin-left: auto;
+    background: var(--red);
+    color: #fff;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+  }
+
+  /* ============================================
+     RESPONSIVE
+     ============================================ */
+
+  @media (max-width: 360px) {
+    .vitals-grid { grid-template-columns: 1fr; }
+    .vital-card .value { font-size: 24px; }
+    .score-ring { width: 120px; height: 120px; }
+    .score-value .number { font-size: 30px; }
+  }
+
+  @media (min-width: 768px) {
+    .container { max-width: 480px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ============================================
+     HEADER
+     ============================================ -->
+
+<div class="header">
+  <div class="header-left">
+    <div class="logo">PA</div>
+    <div>
+      <h1>PulmoAlert</h1>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;gap:8px;">
+    <span id="goldBadge" class="gold-badge" style="display:none;"></span>
+    <div class="status-dot" id="statusDot"></div>
+  </div>
+</div>
+
+<!-- ============================================
+     MAIN CONTENT
+     ============================================ -->
+
+<div class="container">
+
+  <!-- Error Banner -->
+  <div class="error-banner" id="errorBanner">
+    <span>&#9888;</span>
+    <span id="errorMsg">Sin conexion al servidor</span>
+    <button class="retry-btn" onclick="connect()">Reintentar</button>
+  </div>
+
+  <!-- Loading State -->
+  <div class="loading" id="loadingState">
+    <div class="spinner"></div>
+    Conectando al monitor...
+  </div>
+
+  <!-- Hero: Health Score -->
+  <div class="hero-score" id="heroSection" style="display:none;">
+    <div class="score-ring">
+      <svg viewBox="0 0 100 100">
+        <circle class="bg" cx="50" cy="50" r="40"/>
+        <circle class="progress" id="scoreCircle" cx="50" cy="50" r="40"
+                stroke-dasharray="251.2" stroke-dashoffset="251.2"/>
+      </svg>
+      <div class="score-value">
+        <div class="number" id="scoreNumber">--</div>
+        <div class="label">de 100</div>
+      </div>
+    </div>
+    <div class="score-status" id="scoreStatus">--</div>
+  </div>
+
+  <!-- Alert Banner -->
+  <div class="alert-banner" id="alertBanner">
+    <span id="alertIcon"></span>
+    <span id="alertText"></span>
+  </div>
+
+  <!-- Vital Signs Grid -->
+  <div class="vitals-grid" id="vitalsGrid" style="display:none;">
+
+    <div class="vital-card" id="card-spo2">
+      <div class="icon">&#129656;</div>
+      <div class="name">Saturacion O2</div>
+      <div class="value" id="val-spo2">--<span class="unit"> %</span></div>
+      <div class="range">Saludable: <span class="ok">96-98%</span></div>
+    </div>
+
+    <div class="vital-card" id="card-resp">
+      <div class="icon">&#128172;</div>
+      <div class="name">Frec. Respiratoria</div>
+      <div class="value" id="val-resp">--<span class="unit"> rpm</span></div>
+      <div class="range">Saludable: <span class="ok">12-20</span></div>
+    </div>
+
+    <div class="vital-card" id="card-effort">
+      <div class="icon">&#9889;</div>
+      <div class="name">Esfuerzo Resp.</div>
+      <div class="value" id="val-effort">--<span class="unit"> %</span></div>
+      <div class="range">Saludable: <span class="ok">&lt;30%</span></div>
+    </div>
+
+    <div class="vital-card" id="card-hrv">
+      <div class="icon">&#10084;</div>
+      <div class="name">HRV (SDNN)</div>
+      <div class="value" id="val-hrv">--<span class="unit"> ms</span></div>
+      <div class="range">Saludable: <span class="ok">&gt;50 ms</span></div>
+    </div>
+
+  </div>
+
+  <!-- Breathing Chart (Simplified) -->
+  <div class="chart-section" id="chartSection" style="display:none;">
+    <div class="section-title">
+      Patron Respiratorio
+      <span class="badge" id="sourceBadge">Simulado</span>
+    </div>
+    <div class="chart-container">
+      <canvas id="breathingChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Alerts Timeline -->
+  <div class="alerts-section" id="alertsSection" style="display:none;">
+    <div class="section-title">Alertas Recientes</div>
+    <div id="alertsList">
+      <div class="loading" style="padding:20px;">
+        <div class="spinner"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ============================================
+     BOTTOM NAV
+     ============================================ -->
+
+<div class="bottom-nav">
+  <a class="nav-item active" href="#inicio">
+    <span class="nav-icon">&#127968;</span>
+    Inicio
+  </a>
+  <a class="nav-item" href="#alertas">
+    <span class="nav-icon">&#128680;</span>
+    Alertas
+  </a>
+  <a class="nav-item" href="#historial">
+    <span class="nav-icon">&#128197;</span>
+    Historial
+  </a>
+</div>
+
+<!-- ============================================
+     JAVASCRIPT
+     ============================================ -->
+
+<script>
+// ============================================================
+// CONFIG
+// ============================================================
+const API_URL = '/api/data';
+let connected = false;
+let chart = null;
+let lastAlert = null;
+
+// ============================================================
+// CONNECTION
+// ============================================================
+
+async function fetchData() {
+  try {
+    const resp = await fetch(API_URL);
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    const data = await resp.json();
+    if (!connected) {
+      connected = true;
+      document.getElementById('errorBanner').classList.remove('show');
+      document.getElementById('loadingState').style.display = 'none';
+      document.getElementById('heroSection').style.display = 'block';
+      document.getElementById('vitalsGrid').style.display = 'grid';
+      document.getElementById('chartSection').style.display = 'block';
+      document.getElementById('alertsSection').style.display = 'block';
+      document.getElementById('statusDot').classList.add('connected');
+      initChart();
+    }
+    return data;
+  } catch (err) {
+    if (connected) {
+      document.getElementById('errorBanner').classList.add('show');
+      document.getElementById('errorMsg').textContent = 'Sin conexion al servidor';
+      document.getElementById('statusDot').classList.remove('connected');
+      connected = false;
+    }
+    return null;
+  }
+}
+
+async function connect() {
+  const data = await fetchData();
+  if (data) update(data);
+}
+
+// ============================================================
+// CHART
+// ============================================================
+
+Chart.defaults.color = '#7a8599';
+Chart.defaults.borderColor = '#1e2a40';
+
+function initChart() {
+  const ctx = document.getElementById('breathingChart').getContext('2d');
+  const labels = Array.from({length: 60}, () => '');
+  const zeros = Array(60).fill(0);
+
+  chart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [
+        {
+          label: 'EPOC',
+          data: zeros.slice(),
+          borderColor: '#f87171',
+          backgroundColor: 'rgba(248,113,113,0.1)',
+          borderWidth: 2,
+          pointRadius: 0,
+          tension: 0.4,
+          fill: true,
+        },
+        {
+          label: 'Sano',
+          data: zeros.slice(),
+          borderColor: '#22c55e',
+          borderWidth: 1.5,
+          borderDash: [4, 4],
+          pointRadius: 0,
+          tension: 0.4,
+          fill: false,
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 200 },
+      plugins: {
+        legend: { display: false }
+      },
+      scales: {
+        x: { display: false },
+        y: {
+          min: -1.8,
+          max: 1.8,
+          grid: { color: '#141c2e' },
+          ticks: { font: { size: 9 } }
+        }
+      }
+    }
+  });
+}
+
+// ============================================================
+// UPDATE FUNCTIONS
+// ============================================================
+
+function getStatus(val, thresholds) {
+  if (val < thresholds[0] || val > thresholds[2]) return 'danger';
+  if (val < thresholds[1] || val > thresholds[3]) return 'warning';
+  return 'normal';
+}
+
+function getScoreColor(score) {
+  if (score > 70) return 'var(--green)';
+  if (score > 45) return 'var(--yellow)';
+  return 'var(--red)';
+}
+
+function getScoreLabel(score) {
+  if (score > 70) return 'EPOC Estable';
+  if (score > 45) return 'Exacerbacion Moderada';
+  return 'Exacerbacion Severa';
+}
+
+function getScoreClass(score) {
+  if (score > 70) return 'estable';
+  if (score > 45) return 'moderada';
+  return 'severa';
+}
+
+function updateHeroScore(score) {
+  const circle = document.getElementById('scoreCircle');
+  const number = document.getElementById('scoreNumber');
+  const status = document.getElementById('scoreStatus');
+
+  const circumference = 2 * Math.PI * 40;
+  const offset = circumference * (1 - score / 100);
+
+  circle.style.strokeDashoffset = offset;
+  circle.style.stroke = getScoreColor(score);
+
+  number.textContent = Math.round(score);
+  number.style.color = getScoreColor(score);
+
+  status.textContent = getScoreLabel(score);
+  status.className = 'score-status ' + getScoreClass(score);
+}
+
+function updateVitals(patient) {
+  // SpO2
+  const spo2 = patient.spo2;
+  const spo2Status = getStatus(spo2, [85, 92, 96, 98]);
+  const spo2Card = document.getElementById('card-spo2');
+  const spo2Val = document.getElementById('val-spo2');
+  spo2Card.className = 'vital-card ' + spo2Status;
+  spo2Val.innerHTML = Math.round(spo2) + '<span class="unit"> %</span>';
+  spo2Val.style.color = spo2Status === 'danger' ? 'var(--red)' : spo2Status === 'warning' ? 'var(--yellow)' : 'var(--green)';
+
+  // Respiratory Rate
+  const rr = patient.respRate;
+  const rrStatus = getStatus(rr, [8, 12, 22, 25]);
+  const rrCard = document.getElementById('card-resp');
+  const rrVal = document.getElementById('val-resp');
+  rrCard.className = 'vital-card ' + rrStatus;
+  rrVal.innerHTML = Math.round(rr) + '<span class="unit"> rpm</span>';
+  rrVal.style.color = rrStatus === 'danger' ? 'var(--red)' : rrStatus === 'warning' ? 'var(--yellow)' : 'var(--green)';
+
+  // Effort Index
+  const effort = patient.effortIndex;
+  const effortStatus = effort > 80 ? 'danger' : effort > 50 ? 'warning' : 'normal';
+  const effortCard = document.getElementById('card-effort');
+  const effortVal = document.getElementById('val-effort');
+  effortCard.className = 'vital-card ' + effortStatus;
+  effortVal.innerHTML = Math.round(effort) + '<span class="unit"> %</span>';
+  effortVal.style.color = effortStatus === 'danger' ? 'var(--red)' : effortStatus === 'warning' ? 'var(--yellow)' : 'var(--green)';
+
+  // HRV
+  const hrv = patient.hrv;
+  const hrvStatus = getStatus(hrv, [8, 25, 40, 50]);
+  const hrvCard = document.getElementById('card-hrv');
+  const hrvVal = document.getElementById('val-hrv');
+  hrvCard.className = 'vital-card ' + hrvStatus;
+  hrvVal.innerHTML = Math.round(hrv) + '<span class="unit"> ms</span>';
+  hrvVal.style.color = hrvStatus === 'danger' ? 'var(--red)' : hrvStatus === 'warning' ? 'var(--yellow)' : 'var(--green)';
+}
+
+function updateAlertBanner(patient, events) {
+  const banner = document.getElementById('alertBanner');
+  const icon = document.getElementById('alertIcon');
+  const text = document.getElementById('alertText');
+
+  // Priority: SpO2 > Effort > RR > HRV
+  if (patient.spo2 < 88) {
+    banner.className = 'alert-banner critical show';
+    icon.innerHTML = '&#9888;';
+    text.innerHTML = `<strong>Alerta Critica:</strong> SpO2 ${Math.round(patient.spo2)}% - Busque atencion medica inmediata`;
+  } else if (patient.effortIndex > 85) {
+    banner.className = 'alert-banner critical show';
+    icon.innerHTML = '&#9888;';
+    text.innerHTML = `<strong>Esfuerzo Elevado:</strong> ${Math.round(patient.effortIndex)}% - Respire despacio y consulte a su medico`;
+  } else if (patient.respRate > 25 || patient.respRate < 8) {
+    banner.className = 'alert-banner warning show';
+    icon.innerHTML = '&#9888;';
+    text.innerHTML = `<strong>Frecuencia Anormal:</strong> ${Math.round(patient.respRate)} rpm - Monitoree sus sintomas`;
+  } else if (patient.hrv < 25) {
+    banner.className = 'alert-banner warning show';
+    icon.innerHTML = '&#9888;';
+    text.innerHTML = `<strong>HRV Bajo:</strong> ${Math.round(patient.hrv)} ms - Estrés fisiologico elevado`;
+  } else {
+    banner.className = 'alert-banner success show';
+    icon.innerHTML = '&#10003;';
+    text.innerHTML = 'Sin alertas activas - Valores dentro de rangos';
+  }
+}
+
+function updateAlerts(events) {
+  const list = document.getElementById('alertsList');
+
+  if (!events || events.length === 0) {
+    list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-dim);font-size:13px;">Sin eventos recientes</div>';
+    return;
+  }
+
+  list.innerHTML = events.slice(0, 6).map(e => {
+    const type = e.type || 'info';
+    const dotClass = type === 'danger' ? 'red' : type === 'warn' ? 'yellow' : 'green';
+    return `<div class="alert-item">
+      <div class="alert-dot ${dotClass}"></div>
+      <div class="alert-content">
+        <div class="title">${e.title}</div>
+        <div class="desc">${e.desc}</div>
+        ${e.time ? `<div class="time">${e.time}</div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function updateBreathing(data) {
+  if (!chart) return;
+  const ds = chart.data.datasets;
+  ds[0].data = data.breathing.pulmo.slice(-60);
+  ds[1].data = data.breathing.healthy.slice(-60);
+  chart.update('none');
+}
+
+function updateBadges(data) {
+  const goldBadge = document.getElementById('goldBadge');
+  if (data.goldStage) {
+    goldBadge.textContent = data.goldLabel || 'GOLD ' + data.goldStage;
+    goldBadge.style.display = 'inline-flex';
+  } else {
+    goldBadge.style.display = 'none';
+  }
+
+  const srcBadge = document.getElementById('sourceBadge');
+  if (data.source === 'esp32_real') {
+    srcBadge.textContent = 'ESP32 Real';
+    srcBadge.style.background = 'rgba(5, 150, 105, 0.2)';
+    srcBadge.style.color = '#10b981';
+  } else {
+    srcBadge.textContent = 'Simulado';
+  }
+}
+
+function update(data) {
+  updateHeroScore(data.patient.healthScore || 0);
+  updateVitals(data.patient);
+  updateAlertBanner(data.patient, data.events);
+  updateAlerts(data.events);
+  updateBreathing(data);
+  updateBadges(data);
+}
+
+// ============================================================
+// MAIN LOOP
+// ============================================================
+
+async function tick() {
+  const data = await fetchData();
+  if (data) update(data);
+}
+
+// ============================================================
+// BOOT
+// ============================================================
+
+document.addEventListener('DOMContentLoaded', () => {
+  connect();
+  setInterval(tick, 1500);
+});
+
+// Handle visibility change (pause when tab hidden)
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) tick();
+});
+</script>
+
+</body>
+</html>

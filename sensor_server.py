@@ -448,6 +448,7 @@ real_bridge = RealSensorBridge()
 PORT = int(sys.argv[2]) if len(sys.argv) > 2 and sys.argv[1] == "--port" else 5000
 BASE_DIR = os.path.dirname(os.path.abspath(__file__)) or "."
 HTML_FILE = os.path.join(BASE_DIR, "PulmoAlert_Dashboard.html")
+HTML_MOBILE = os.path.join(BASE_DIR, "PulmoAlert_Mobile.html")
 
 
 class SensorAPIHandler(http.server.SimpleHTTPRequestHandler):
@@ -475,6 +476,8 @@ class SensorAPIHandler(http.server.SimpleHTTPRequestHandler):
             })
         elif path == "/":
             self._serve_file(HTML_FILE, "text/html; charset=utf-8")
+        elif path == "/mobile":
+            self._serve_file(HTML_MOBILE, "text/html; charset=utf-8")
         else:
             super().do_GET()
 
