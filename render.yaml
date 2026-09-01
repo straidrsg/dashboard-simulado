@@ -3,7 +3,7 @@ services:
     name: pulmoalert-sensor-server
     runtime: python
     buildCommand: pip install -r requirements.txt
-    startCommand: python sensor_server.py --port $PORT
+    startCommand: gunicorn wsgi:application --bind 0.0.0.0:$PORT --workers 1 --threads 4
     plan: free
     envVars:
       - key: PYTHON_VERSION
