@@ -3,38 +3,76 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>PulmoAlert - Monitoreo Móvil</title>
+<title>PulmoAlert - Móvil</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🫁</text></svg>">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
+  /* ============================================
+     FRUTIGER AERO - Paleta
+     ============================================ */
   :root {
-    --bg: #0a0f1a;
-    --card: #141c2e;
-    --border: #1e2a40;
-    --text: #e2e8f0;
-    --text-dim: #7a8599;
-    --accent: #3b82f6;
-    --green: #22c55e;
-    --yellow: #eab308;
-    --red: #ef4444;
-    --safe: #10b981;
+    --sky-top: #eaf5fd;
+    --sky-mid: #d7edfb;
+    --sky-bot: #bde3f9;
+    --glass-bg: rgba(255,255,255,0.72);
+    --glass-border: rgba(255,255,255,0.9);
+    --glass-shadow: 0 6px 24px rgba(0,80,160,0.12), 0 2px 6px rgba(0,60,140,0.05);
+    --glass-gloss: linear-gradient(180deg, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0) 45%);
+    --aero-blue: #2f9ed8;
+    --aero-blue-dark: #1a6fa8;
+    --aero-green: #4cb870;
+    --aero-green-dark: #2e9a52;
+    --aero-orange: #e8943a;
+    --aero-red: #e25555;
+    --text: #1a3a52;
+    --text-dim: #5a7a92;
+    --text-light: #8aacc4;
   }
 
-  * { 
-    margin: 0; 
-    padding: 0; 
-    box-sizing: border-box; 
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     -webkit-tap-highlight-color: transparent;
   }
 
   html, body {
-    background: var(--bg);
-    color: var(--text);
     min-height: 100vh;
     min-height: 100dvh;
     overflow-x: hidden;
     -webkit-font-smoothing: antialiased;
+    color: var(--text);
+    background: linear-gradient(180deg, var(--sky-top) 0%, var(--sky-mid) 40%, var(--sky-bot) 100%);
+    background-attachment: fixed;
+  }
+
+  /* ============================================
+     BURBUJAS
+     ============================================ */
+
+  .bubbles {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    z-index: 0;
+    pointer-events: none;
+    overflow: hidden;
+  }
+
+  .bubble {
+    position: absolute;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.6), rgba(47,158,216,0.08));
+    border: 1px solid rgba(255,255,255,0.5);
+    animation: float linear infinite;
+    opacity: 0.5;
+  }
+
+  @keyframes float {
+    0% { transform: translateY(100vh) scale(0.3); opacity: 0; }
+    12% { opacity: 0.5; }
+    88% { opacity: 0.5; }
+    100% { transform: translateY(-120px) scale(1); opacity: 0; }
   }
 
   /* ============================================
@@ -45,12 +83,14 @@
     position: sticky;
     top: 0;
     z-index: 100;
-    background: var(--bg);
     padding: 12px 16px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    border-bottom: 1px solid var(--border);
+    background: linear-gradient(180deg, rgba(234,245,253,0.95), rgba(234,245,253,0.7));
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-bottom: 1px solid rgba(255,255,255,0.6);
   }
 
   .header-left {
@@ -60,151 +100,169 @@
   }
 
   .logo {
-    width: 36px;
-    height: 36px;
-    background: linear-gradient(135deg, var(--accent), #06b6d4);
-    border-radius: 10px;
+    width: 38px; height: 38px;
+    background: linear-gradient(145deg, #5bc0f8 0%, #2f9ed8 50%, #1a6fa8 100%);
+    border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 16px;
     font-weight: 800;
     color: #fff;
+    box-shadow: 0 4px 12px rgba(47,158,216,0.35), inset 0 1px 0 rgba(255,255,255,0.5);
+    border: 1px solid rgba(255,255,255,0.4);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .logo::after {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0;
+    height: 50%;
+    background: linear-gradient(180deg, rgba(255,255,255,0.45), transparent);
   }
 
   .header h1 {
     font-size: 18px;
     font-weight: 700;
-    background: linear-gradient(135deg, #60a5fa, #2dd4bf);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    color: var(--aero-blue-dark);
+    text-shadow: 0 1px 0 rgba(255,255,255,0.8);
   }
 
   .status-dot {
-    width: 8px;
-    height: 8px;
+    width: 9px; height: 9px;
     border-radius: 50%;
-    background: var(--red);
+    background: var(--aero-red);
     animation: pulse 2s infinite;
   }
 
-  .status-dot.connected { background: var(--green); }
+  .status-dot.connected {
+    background: var(--aero-green);
+    box-shadow: 0 0 10px rgba(76,184,112,0.6);
+  }
 
   @keyframes pulse {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.5; transform: scale(1.2); }
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.3); opacity: 0.6; }
   }
 
   /* ============================================
-     MAIN CONTAINER
+     CONTAINER
      ============================================ */
 
   .container {
+    position: relative;
+    z-index: 1;
     padding: 16px;
-    padding-bottom: 100px;
+    padding-bottom: 110px;
     max-width: 480px;
     margin: 0 auto;
   }
 
   /* ============================================
-     HEALTH SCORE - HERO SECTION
+     GLASS CARD
      ============================================ */
 
-  .hero-score {
-    background: var(--card);
+  .glass {
+    background: var(--glass-bg);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid var(--glass-border);
     border-radius: 20px;
-    padding: 24px;
-    text-align: center;
-    margin-bottom: 20px;
-    border: 1px solid var(--border);
+    box-shadow: var(--glass-shadow);
     position: relative;
     overflow: hidden;
   }
 
-  .hero-score::before {
+  .glass::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0;
+    height: 45%;
+    background: var(--glass-gloss);
+    pointer-events: none;
+  }
+
+  /* ============================================
+     HERO SCORE
+     ============================================ */
+
+  .hero-score {
+    padding: 24px 20px 20px;
+    text-align: center;
+    margin-bottom: 16px;
+  }
+
+  .hero-score::after {
     content: '';
     position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 4px;
-    background: linear-gradient(90deg, var(--accent), #06b6d4);
+    bottom: -30px; right: -30px;
+    width: 90px; height: 90px;
+    background: radial-gradient(circle, rgba(47,158,216,0.06), transparent 70%);
   }
 
   .score-ring {
     position: relative;
-    width: 140px;
-    height: 140px;
-    margin: 0 auto 16px;
+    width: 150px; height: 150px;
+    margin: 0 auto 14px;
   }
 
-  .score-ring svg {
-    width: 100%;
-    height: 100%;
-    transform: rotate(-90deg);
-  }
+  .score-ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
 
   .score-ring .bg {
     fill: none;
-    stroke: var(--border);
-    stroke-width: 10;
+    stroke: rgba(47,158,216,0.1);
+    stroke-width: 11;
   }
 
   .score-ring .progress {
     fill: none;
-    stroke: var(--green);
-    stroke-width: 10;
+    stroke: var(--aero-green);
+    stroke-width: 11;
     stroke-linecap: round;
+    filter: drop-shadow(0 2px 4px rgba(76,184,112,0.4));
     transition: stroke-dashoffset 0.8s ease, stroke 0.5s ease;
   }
 
   .score-value {
-    position: absolute;
-    top: 50%;
-    left: 50%;
+    position: absolute; top: 50%; left: 50%;
     transform: translate(-50%, -50%);
     text-align: center;
   }
 
   .score-value .number {
-    font-size: 36px;
-    font-weight: 800;
+    font-size: 38px; font-weight: 800;
     line-height: 1;
-    color: var(--green);
+    color: var(--aero-green-dark);
+    text-shadow: 0 2px 6px rgba(255,255,255,0.6);
     transition: color 0.5s ease;
   }
 
   .score-value .label {
-    font-size: 11px;
-    color: var(--text-dim);
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    margin-top: 2px;
+    font-size: 10px; color: var(--text-dim);
+    text-transform: uppercase; letter-spacing: 1px; margin-top: 3px;
   }
 
   .score-status {
-    font-size: 16px;
-    font-weight: 600;
-    margin-top: 8px;
-    padding: 6px 16px;
-    border-radius: 20px;
-    display: inline-block;
+    font-size: 16px; font-weight: 600;
+    padding: 6px 18px; border-radius: 20px; display: inline-block;
   }
 
   .score-status.estable {
-    background: rgba(34, 197, 94, 0.15);
-    color: var(--green);
+    background: linear-gradient(135deg, rgba(76,184,112,0.15), rgba(76,184,112,0.08));
+    color: var(--aero-green-dark);
+    border: 1px solid rgba(76,184,112,0.2);
   }
 
   .score-status.moderada {
-    background: rgba(234, 179, 8, 0.15);
-    color: var(--yellow);
+    background: linear-gradient(135deg, rgba(232,148,58,0.15), rgba(232,148,58,0.08));
+    color: #b06a1d;
+    border: 1px solid rgba(232,148,58,0.2);
   }
 
   .score-status.severa {
-    background: rgba(239, 68, 68, 0.15);
-    color: var(--red);
+    background: linear-gradient(135deg, rgba(226,85,85,0.15), rgba(226,85,85,0.08));
+    color: #a83232;
+    border: 1px solid rgba(226,85,85,0.2);
   }
 
   /* ============================================
@@ -213,34 +271,35 @@
 
   .alert-banner {
     display: none;
-    padding: 12px 16px;
-    border-radius: 12px;
+    padding: 13px 16px;
+    border-radius: 14px;
     margin-bottom: 16px;
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 500;
     align-items: center;
     gap: 10px;
+    backdrop-filter: blur(10px);
     animation: slideDown 0.3s ease;
   }
 
   .alert-banner.show { display: flex; }
 
   .alert-banner.critical {
-    background: rgba(239, 68, 68, 0.15);
-    border: 1px solid rgba(239, 68, 68, 0.3);
-    color: #fca5a5;
+    background: linear-gradient(135deg, rgba(226,85,85,0.15), rgba(226,85,85,0.06));
+    border: 1px solid rgba(226,85,85,0.3);
+    color: #a83232;
   }
 
   .alert-banner.warning {
-    background: rgba(234, 179, 8, 0.15);
-    border: 1px solid rgba(234, 179, 8, 0.3);
-    color: #fde047;
+    background: linear-gradient(135deg, rgba(232,148,58,0.15), rgba(232,148,58,0.06));
+    border: 1px solid rgba(232,148,58,0.3);
+    color: #b06a1d;
   }
 
   .alert-banner.success {
-    background: rgba(34, 197, 94, 0.15);
-    border: 1px solid rgba(34, 179, 94, 0.3);
-    color: #86efac;
+    background: linear-gradient(135deg, rgba(76,184,112,0.15), rgba(76,184,112,0.06));
+    border: 1px solid rgba(76,184,112,0.3);
+    color: var(--aero-green-dark);
   }
 
   @keyframes slideDown {
@@ -249,134 +308,105 @@
   }
 
   /* ============================================
-     VITAL SIGNS GRID
+     VITAL SIGNS
      ============================================ */
 
   .vitals-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 12px;
-    margin-bottom: 20px;
+    margin-bottom: 16px;
   }
 
   .vital-card {
-    background: var(--card);
-    border-radius: 16px;
     padding: 16px;
-    border: 1px solid var(--border);
-    position: relative;
-    overflow: hidden;
   }
 
-  .vital-card::before {
+  .vital-card::after {
     content: '';
     position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 3px;
-    transition: background 0.5s ease;
+    bottom: -20px; right: -20px;
+    width: 60px; height: 60px;
+    background: radial-gradient(circle, rgba(47,158,216,0.06), transparent 70%);
   }
 
-  .vital-card.normal::before { background: var(--green); }
-  .vital-card.warning::before { background: var(--yellow); }
-  .vital-card.danger::before { background: var(--red); }
-
   .vital-card .icon {
-    font-size: 20px;
-    margin-bottom: 8px;
+    font-size: 20px; margin-bottom: 8px;
+    display: inline-flex;
+    width: 34px; height: 34px;
+    border-radius: 10px;
+    align-items: center; justify-content: center;
+    background: linear-gradient(135deg, rgba(47,158,216,0.12), rgba(47,158,216,0.05));
+    border: 1px solid rgba(47,158,216,0.1);
   }
 
   .vital-card .name {
-    font-size: 11px;
-    color: var(--text-dim);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-bottom: 4px;
+    font-size: 10px; color: var(--text-dim);
+    text-transform: uppercase; letter-spacing: 0.5px;
+    margin-bottom: 4px; font-weight: 600;
   }
 
   .vital-card .value {
-    font-size: 28px;
-    font-weight: 800;
-    line-height: 1;
+    font-size: 30px; font-weight: 800;
+    line-height: 1.1; color: var(--aero-blue-dark);
+    text-shadow: 0 2px 6px rgba(255,255,255,0.6);
     transition: color 0.5s ease;
   }
 
-  .vital-card .unit {
-    font-size: 12px;
-    color: var(--text-dim);
-    font-weight: 400;
-  }
+  .vital-card .unit { font-size: 12px; color: var(--text-dim); font-weight: 400; }
 
   .vital-card .range {
-    font-size: 10px;
-    color: var(--text-dim);
-    margin-top: 6px;
-    padding-top: 6px;
-    border-top: 1px solid var(--border);
+    font-size: 9px; color: var(--text-light);
+    margin-top: 6px; padding-top: 6px;
+    border-top: 1px solid rgba(47,158,216,0.08);
   }
 
-  .vital-card .range .ok { color: var(--green); }
-  .vital-card .range .warn { color: var(--yellow); }
-  .vital-card .range .bad { color: var(--red); }
+  .vital-card.normal .value { color: var(--aero-green-dark); }
+  .vital-card.warning .value { color: var(--aero-orange); }
+  .vital-card.danger .value { color: var(--aero-red); }
 
   /* ============================================
-     BREATHING CHART (SIMPLE)
+     CHART
      ============================================ */
 
   .chart-section {
-    background: var(--card);
-    border-radius: 16px;
     padding: 16px;
-    border: 1px solid var(--border);
-    margin-bottom: 20px;
+    margin-bottom: 16px;
   }
 
   .chart-section .section-title {
-    font-size: 13px;
-    font-weight: 600;
+    font-size: 12px; font-weight: 600;
     color: var(--text-dim);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+    text-transform: uppercase; letter-spacing: 0.5px;
     margin-bottom: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+    display: flex; align-items: center; justify-content: space-between;
   }
 
   .chart-section .section-title .badge {
     font-size: 10px;
-    background: rgba(59, 130, 246, 0.2);
-    color: var(--accent);
-    padding: 2px 8px;
-    border-radius: 8px;
-    font-weight: 500;
+    background: linear-gradient(135deg, rgba(47,158,216,0.12), rgba(47,158,216,0.06));
+    color: var(--aero-blue);
+    padding: 2px 8px; border-radius: 8px;
+    border: 1px solid rgba(47,158,216,0.1);
+    font-weight: 600;
   }
 
-  .chart-container {
-    height: 120px;
-    position: relative;
-  }
+  .chart-container { height: 120px; position: relative; }
 
   /* ============================================
-     SIMPLE ALERTS LIST
+     ALERTS LIST
      ============================================ */
 
   .alerts-section {
-    background: var(--card);
-    border-radius: 16px;
     padding: 16px;
-    border: 1px solid var(--border);
-    margin-bottom: 20px;
+    margin-bottom: 16px;
   }
 
   .alerts-section .section-title {
-    font-size: 13px;
-    font-weight: 600;
+    font-size: 12px; font-weight: 600;
     color: var(--text-dim);
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-bottom: 12px;
+    text-transform: uppercase; letter-spacing: 0.5px;
+    margin-bottom: 8px;
   }
 
   .alert-item {
@@ -384,147 +414,142 @@
     align-items: flex-start;
     gap: 12px;
     padding: 12px 0;
-    border-bottom: 1px solid var(--border);
+    border-bottom: 1px solid rgba(47,158,216,0.06);
   }
 
   .alert-item:last-child { border-bottom: none; }
 
   .alert-dot {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    margin-top: 4px;
-    flex-shrink: 0;
+    width: 10px; height: 10px; border-radius: 50%;
+    margin-top: 4px; flex-shrink: 0;
   }
 
-  .alert-dot.red { background: var(--red); box-shadow: 0 0 8px rgba(239, 68, 68, 0.5); }
-  .alert-dot.yellow { background: var(--yellow); box-shadow: 0 0 8px rgba(234, 179, 8, 0.5); }
-  .alert-dot.green { background: var(--green); }
+  .alert-dot.red { background: var(--aero-red); box-shadow: 0 0 8px rgba(226,85,85,0.5); }
+  .alert-dot.yellow { background: var(--aero-orange); box-shadow: 0 0 8px rgba(232,148,58,0.5); }
+  .alert-dot.green { background: var(--aero-green); }
 
-  .alert-content {
-    flex: 1;
-    min-width: 0;
-  }
+  .alert-content { flex: 1; min-width: 0; }
 
   .alert-content .title {
-    font-size: 13px;
-    font-weight: 600;
-    margin-bottom: 2px;
+    font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 2px;
   }
 
   .alert-content .desc {
-    font-size: 12px;
-    color: var(--text-dim);
-    line-height: 1.4;
+    font-size: 11px; color: var(--text-dim); line-height: 1.4;
   }
 
   .alert-content .time {
-    font-size: 10px;
-    color: #5a6477;
-    margin-top: 3px;
+    font-size: 9px; color: var(--text-light); margin-top: 3px;
   }
 
   /* ============================================
-     GOLD STAGE BADGE
+     GOLD BADGE
      ============================================ */
 
   .gold-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    background: rgba(59, 130, 246, 0.2);
-    color: var(--accent);
-    padding: 4px 10px;
-    border-radius: 10px;
-    font-size: 11px;
-    font-weight: 600;
+    display: inline-flex; align-items: center; gap: 4px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.5), rgba(255,255,255,0.2));
+    backdrop-filter: blur(8px);
+    color: var(--aero-blue-dark);
+    padding: 4px 10px; border-radius: 10px;
+    font-size: 10px; font-weight: 600;
+    border: 1px solid var(--glass-border);
+    box-shadow: 0 2px 8px rgba(0,80,160,0.08);
   }
 
   /* ============================================
-     BOTTOM NAV (OPTIONAL)
+     BOTTOM NAV
      ============================================ */
 
   .bottom-nav {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: var(--card);
-    border-top: 1px solid var(--border);
-    padding: 8px 0;
-    padding-bottom: max(8px, env(safe-area-inset-bottom));
-    display: flex;
-    justify-content: space-around;
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: linear-gradient(180deg, rgba(234,245,253,0.9), rgba(234,245,253,0.75));
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-top: 1px solid rgba(255,255,255,0.6);
+    padding: 6px 0;
+    padding-bottom: max(6px, env(safe-area-inset-bottom));
+    display: flex; justify-content: space-around;
     z-index: 100;
   }
 
   .nav-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 2px;
-    padding: 4px 12px;
-    font-size: 10px;
-    color: var(--text-dim);
+    display: flex; flex-direction: column;
+    align-items: center; gap: 2px;
+    padding: 4px 14px;
+    font-size: 9px; color: var(--text-dim);
     text-decoration: none;
+    font-weight: 500;
   }
 
-  .nav-item.active { color: var(--accent); }
-  .nav-item .nav-icon { font-size: 20px; }
+  .nav-item.active { color: var(--aero-blue); }
+
+  .nav-item .nav-icon {
+    font-size: 20px;
+    display: inline-flex;
+    width: 32px; height: 32px;
+    border-radius: 12px;
+    align-items: center; justify-content: center;
+  }
+
+  .nav-item.active .nav-icon {
+    background: linear-gradient(135deg, rgba(47,158,216,0.15), rgba(47,158,216,0.05));
+  }
 
   /* ============================================
      LOADING / ERROR
      ============================================ */
 
   .loading {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 40px;
-    color: var(--text-dim);
-    font-size: 14px;
-    gap: 12px;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 40px; color: var(--text-dim);
+    font-size: 14px; gap: 12px;
   }
 
   .loading .spinner {
-    width: 32px;
-    height: 32px;
-    border: 3px solid var(--border);
-    border-top-color: var(--accent);
+    width: 34px; height: 34px;
+    border: 3px solid rgba(47,158,216,0.15);
+    border-top-color: var(--aero-blue);
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
   }
 
-  @keyframes spin {
-    to { transform: rotate(360deg); }
-  }
+  @keyframes spin { to { transform: rotate(360deg); } }
 
   .error-banner {
-    background: rgba(239, 68, 68, 0.15);
-    border: 1px solid rgba(239, 68, 68, 0.3);
-    color: #fca5a5;
-    padding: 12px 16px;
-    border-radius: 12px;
-    margin-bottom: 16px;
-    font-size: 13px;
-    display: none;
-    align-items: center;
-    gap: 8px;
+    background: linear-gradient(135deg, rgba(226,85,85,0.12), rgba(226,85,85,0.05));
+    border: 1px solid rgba(226,85,85,0.25);
+    color: #a83232;
+    padding: 12px 16px; border-radius: 14px;
+    margin-bottom: 16px; font-size: 13px;
+    display: none; align-items: center; gap: 8px;
   }
 
   .error-banner.show { display: flex; }
 
   .error-banner .retry-btn {
     margin-left: auto;
-    background: var(--red);
-    color: #fff;
-    border: none;
-    padding: 6px 12px;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 12px;
-    font-weight: 500;
+    background: linear-gradient(135deg, #e25555, #c93c3c);
+    color: #fff; border: none;
+    padding: 6px 14px; border-radius: 10px;
+    cursor: pointer; font-size: 11px; font-weight: 600;
+    box-shadow: 0 3px 10px rgba(226,85,85,0.3), inset 0 1px 0 rgba(255,255,255,0.3);
+  }
+
+  /* ============================================
+     ERROR / LOADING CONTAINER
+     ============================================ */
+
+  .initial-container {
+    background: var(--glass-bg);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    box-shadow: var(--glass-shadow);
+    overflow: hidden;
+    position: relative;
   }
 
   /* ============================================
@@ -533,17 +558,16 @@
 
   @media (max-width: 360px) {
     .vitals-grid { grid-template-columns: 1fr; }
-    .vital-card .value { font-size: 24px; }
-    .score-ring { width: 120px; height: 120px; }
-    .score-value .number { font-size: 30px; }
-  }
-
-  @media (min-width: 768px) {
-    .container { max-width: 480px; }
+    .vital-card .value { font-size: 26px; }
+    .score-ring { width: 130px; height: 130px; }
+    .score-value .number { font-size: 32px; }
   }
 </style>
 </head>
 <body>
+
+<!-- Burbujas Frutiger Aero -->
+<div class="bubbles" id="bubbles"></div>
 
 <!-- ============================================
      HEADER
@@ -552,9 +576,7 @@
 <div class="header">
   <div class="header-left">
     <div class="logo">PA</div>
-    <div>
-      <h1>PulmoAlert</h1>
-    </div>
+    <h1>PulmoAlert</h1>
   </div>
   <div style="display:flex;align-items:center;gap:8px;">
     <span id="goldBadge" class="gold-badge" style="display:none;"></span>
@@ -576,13 +598,13 @@
   </div>
 
   <!-- Loading State -->
-  <div class="loading" id="loadingState">
+  <div class="loading initial-container" id="loadingState">
     <div class="spinner"></div>
     Conectando al monitor...
   </div>
 
   <!-- Hero: Health Score -->
-  <div class="hero-score" id="heroSection" style="display:none;">
+  <div class="hero-score glass" id="heroSection" style="display:none;">
     <div class="score-ring">
       <svg viewBox="0 0 100 100">
         <circle class="bg" cx="50" cy="50" r="40"/>
@@ -606,38 +628,38 @@
   <!-- Vital Signs Grid -->
   <div class="vitals-grid" id="vitalsGrid" style="display:none;">
 
-    <div class="vital-card" id="card-spo2">
+    <div class="vital-card glass" id="card-spo2">
       <div class="icon">&#129656;</div>
       <div class="name">Saturacion O2</div>
       <div class="value" id="val-spo2">--<span class="unit"> %</span></div>
-      <div class="range">Saludable: <span class="ok">96-98%</span></div>
+      <div class="range">Saludable: 96-98%</div>
     </div>
 
-    <div class="vital-card" id="card-resp">
+    <div class="vital-card glass" id="card-resp">
       <div class="icon">&#128172;</div>
       <div class="name">Frec. Respiratoria</div>
       <div class="value" id="val-resp">--<span class="unit"> rpm</span></div>
-      <div class="range">Saludable: <span class="ok">12-20</span></div>
+      <div class="range">Saludable: 12-20</div>
     </div>
 
-    <div class="vital-card" id="card-effort">
+    <div class="vital-card glass" id="card-effort">
       <div class="icon">&#9889;</div>
       <div class="name">Esfuerzo Resp.</div>
       <div class="value" id="val-effort">--<span class="unit"> %</span></div>
-      <div class="range">Saludable: <span class="ok">&lt;30%</span></div>
+      <div class="range">Saludable: &lt;30%</div>
     </div>
 
-    <div class="vital-card" id="card-hrv">
+    <div class="vital-card glass" id="card-hrv">
       <div class="icon">&#10084;</div>
       <div class="name">HRV (SDNN)</div>
       <div class="value" id="val-hrv">--<span class="unit"> ms</span></div>
-      <div class="range">Saludable: <span class="ok">&gt;50 ms</span></div>
+      <div class="range">Saludable: &gt;50 ms</div>
     </div>
 
   </div>
 
-  <!-- Breathing Chart (Simplified) -->
-  <div class="chart-section" id="chartSection" style="display:none;">
+  <!-- Breathing Chart -->
+  <div class="chart-section glass" id="chartSection" style="display:none;">
     <div class="section-title">
       Patron Respiratorio
       <span class="badge" id="sourceBadge">Simulado</span>
@@ -648,7 +670,7 @@
   </div>
 
   <!-- Alerts Timeline -->
-  <div class="alerts-section" id="alertsSection" style="display:none;">
+  <div class="alerts-section glass" id="alertsSection" style="display:none;">
     <div class="section-title">Alertas Recientes</div>
     <div id="alertsList">
       <div class="loading" style="padding:20px;">
@@ -674,7 +696,7 @@
   </a>
   <a class="nav-item" href="#historial">
     <span class="nav-icon">&#128197;</span>
-    Historial
+    Resumen
   </a>
 </div>
 
@@ -684,12 +706,30 @@
 
 <script>
 // ============================================================
+// BURBUJAS
+// ============================================================
+(function createBubbles() {
+  const container = document.getElementById('bubbles');
+  const count = 10;
+  for (let i = 0; i < count; i++) {
+    const b = document.createElement('div');
+    b.className = 'bubble';
+    const size = 16 + Math.random() * 50;
+    b.style.width = size + 'px';
+    b.style.height = size + 'px';
+    b.style.left = (Math.random() * 100) + '%';
+    b.style.animationDuration = (10 + Math.random() * 15) + 's';
+    b.style.animationDelay = (-Math.random() * 18) + 's';
+    container.appendChild(b);
+  }
+})();
+
+// ============================================================
 // CONFIG
 // ============================================================
 const API_URL = '/api/data';
 let connected = false;
 let chart = null;
-let lastAlert = null;
 
 // ============================================================
 // CONNECTION
@@ -732,8 +772,8 @@ async function connect() {
 // CHART
 // ============================================================
 
-Chart.defaults.color = '#7a8599';
-Chart.defaults.borderColor = '#1e2a40';
+Chart.defaults.color = '#5a7a92';
+Chart.defaults.borderColor = 'rgba(47,158,216,0.08)';
 
 function initChart() {
   const ctx = document.getElementById('breathingChart').getContext('2d');
@@ -748,9 +788,9 @@ function initChart() {
         {
           label: 'EPOC',
           data: zeros.slice(),
-          borderColor: '#f87171',
-          backgroundColor: 'rgba(248,113,113,0.1)',
-          borderWidth: 2,
+          borderColor: '#e25555',
+          backgroundColor: 'rgba(226,85,85,0.1)',
+          borderWidth: 2.5,
           pointRadius: 0,
           tension: 0.4,
           fill: true,
@@ -758,7 +798,7 @@ function initChart() {
         {
           label: 'Sano',
           data: zeros.slice(),
-          borderColor: '#22c55e',
+          borderColor: '#4cb870',
           borderWidth: 1.5,
           borderDash: [4, 4],
           pointRadius: 0,
@@ -771,15 +811,12 @@ function initChart() {
       responsive: true,
       maintainAspectRatio: false,
       animation: { duration: 200 },
-      plugins: {
-        legend: { display: false }
-      },
+      plugins: { legend: { display: false } },
       scales: {
         x: { display: false },
         y: {
-          min: -1.8,
-          max: 1.8,
-          grid: { color: '#141c2e' },
+          min: -1.8, max: 1.8,
+          grid: { color: 'rgba(47,158,216,0.05)' },
           ticks: { font: { size: 9 } }
         }
       }
@@ -798,9 +835,9 @@ function getStatus(val, thresholds) {
 }
 
 function getScoreColor(score) {
-  if (score > 70) return 'var(--green)';
-  if (score > 45) return 'var(--yellow)';
-  return 'var(--red)';
+  if (score > 70) return 'var(--aero-green)';
+  if (score > 45) return 'var(--aero-orange)';
+  return 'var(--aero-red)';
 }
 
 function getScoreLabel(score) {
@@ -834,49 +871,44 @@ function updateHeroScore(score) {
 }
 
 function updateVitals(patient) {
-  // SpO2
   const spo2 = patient.spo2;
   const spo2Status = getStatus(spo2, [85, 92, 96, 98]);
   const spo2Card = document.getElementById('card-spo2');
   const spo2Val = document.getElementById('val-spo2');
-  spo2Card.className = 'vital-card ' + spo2Status;
+  spo2Card.className = 'vital-card glass ' + spo2Status;
   spo2Val.innerHTML = Math.round(spo2) + '<span class="unit"> %</span>';
-  spo2Val.style.color = spo2Status === 'danger' ? 'var(--red)' : spo2Status === 'warning' ? 'var(--yellow)' : 'var(--green)';
+  spo2Val.style.color = spo2Status === 'danger' ? 'var(--aero-red)' : spo2Status === 'warning' ? 'var(--aero-orange)' : 'var(--aero-green-dark)';
 
-  // Respiratory Rate
   const rr = patient.respRate;
   const rrStatus = getStatus(rr, [8, 12, 22, 25]);
   const rrCard = document.getElementById('card-resp');
   const rrVal = document.getElementById('val-resp');
-  rrCard.className = 'vital-card ' + rrStatus;
+  rrCard.className = 'vital-card glass ' + rrStatus;
   rrVal.innerHTML = Math.round(rr) + '<span class="unit"> rpm</span>';
-  rrVal.style.color = rrStatus === 'danger' ? 'var(--red)' : rrStatus === 'warning' ? 'var(--yellow)' : 'var(--green)';
+  rrVal.style.color = rrStatus === 'danger' ? 'var(--aero-red)' : rrStatus === 'warning' ? 'var(--aero-orange)' : 'var(--aero-green-dark)';
 
-  // Effort Index
   const effort = patient.effortIndex;
   const effortStatus = effort > 80 ? 'danger' : effort > 50 ? 'warning' : 'normal';
   const effortCard = document.getElementById('card-effort');
   const effortVal = document.getElementById('val-effort');
-  effortCard.className = 'vital-card ' + effortStatus;
+  effortCard.className = 'vital-card glass ' + effortStatus;
   effortVal.innerHTML = Math.round(effort) + '<span class="unit"> %</span>';
-  effortVal.style.color = effortStatus === 'danger' ? 'var(--red)' : effortStatus === 'warning' ? 'var(--yellow)' : 'var(--green)';
+  effortVal.style.color = effortStatus === 'danger' ? 'var(--aero-red)' : effortStatus === 'warning' ? 'var(--aero-orange)' : 'var(--aero-green-dark)';
 
-  // HRV
   const hrv = patient.hrv;
   const hrvStatus = getStatus(hrv, [8, 25, 40, 50]);
   const hrvCard = document.getElementById('card-hrv');
   const hrvVal = document.getElementById('val-hrv');
-  hrvCard.className = 'vital-card ' + hrvStatus;
+  hrvCard.className = 'vital-card glass ' + hrvStatus;
   hrvVal.innerHTML = Math.round(hrv) + '<span class="unit"> ms</span>';
-  hrvVal.style.color = hrvStatus === 'danger' ? 'var(--red)' : hrvStatus === 'warning' ? 'var(--yellow)' : 'var(--green)';
+  hrvVal.style.color = hrvStatus === 'danger' ? 'var(--aero-red)' : hrvStatus === 'warning' ? 'var(--aero-orange)' : 'var(--aero-green-dark)';
 }
 
-function updateAlertBanner(patient, events) {
+function updateAlertBanner(patient) {
   const banner = document.getElementById('alertBanner');
   const icon = document.getElementById('alertIcon');
   const text = document.getElementById('alertText');
 
-  // Priority: SpO2 > Effort > RR > HRV
   if (patient.spo2 < 88) {
     banner.className = 'alert-banner critical show';
     icon.innerHTML = '&#9888;';
@@ -942,8 +974,9 @@ function updateBadges(data) {
   const srcBadge = document.getElementById('sourceBadge');
   if (data.source === 'esp32_real') {
     srcBadge.textContent = 'ESP32 Real';
-    srcBadge.style.background = 'rgba(5, 150, 105, 0.2)';
-    srcBadge.style.color = '#10b981';
+    srcBadge.style.background = 'rgba(46,154,82,0.15)';
+    srcBadge.style.color = 'var(--aero-green-dark)';
+    srcBadge.style.border = '1px solid rgba(46,154,82,0.2)';
   } else {
     srcBadge.textContent = 'Simulado';
   }
@@ -952,7 +985,7 @@ function updateBadges(data) {
 function update(data) {
   updateHeroScore(data.patient.healthScore || 0);
   updateVitals(data.patient);
-  updateAlertBanner(data.patient, data.events);
+  updateAlertBanner(data.patient);
   updateAlerts(data.events);
   updateBreathing(data);
   updateBadges(data);
@@ -976,7 +1009,6 @@ document.addEventListener('DOMContentLoaded', () => {
   setInterval(tick, 1500);
 });
 
-// Handle visibility change (pause when tab hidden)
 document.addEventListener('visibilitychange', () => {
   if (!document.hidden) tick();
 });

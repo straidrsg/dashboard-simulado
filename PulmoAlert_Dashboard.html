@@ -3,150 +3,295 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PulmoAlert - Dashboard de Monitoreo EPOC</title>
+<title>PulmoAlert - Monitoreo EPOC</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🫁</text></svg>">
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+  /* =========================================================
+     FRUTIGER AERO - Paleta y reset
+     ========================================================= */
+  :root {
+    --sky-top: #e8f4fd;
+    --sky-mid: #d0ecfa;
+    --sky-bot: #b8e2f8;
+    --glass-bg: rgba(255,255,255,0.72);
+    --glass-border: rgba(255,255,255,0.85);
+    --glass-shadow: 0 8px 32px rgba(0,80,160,0.10), 0 2px 8px rgba(0,60,140,0.06);
+    --glass-gloss: linear-gradient(180deg, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0.0) 40%);
+    --aero-blue: #2f9ed8;
+    --aero-blue-dark: #1a6fa8;
+    --aero-green: #4cb870;
+    --aero-green-dark: #2e9a52;
+    --aero-orange: #e8943a;
+    --aero-red: #e25555;
+    --aero-purple: #8b6cc1;
+    --text: #1a3a52;
+    --text-dim: #5a7a92;
+    --text-light: #8aacc4;
+    --card-radius: 18px;
+    --bubble-color: rgba(47,158,216,0.06);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
 
   body {
-    background: #0f172a;
-    color: #e2e8f0;
+    font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
     min-height: 100vh;
-    display: flex;
-    padding: 20px;
+    color: var(--text);
+    background: linear-gradient(180deg, var(--sky-top) 0%, var(--sky-mid) 40%, var(--sky-bot) 100%);
+    background-attachment: fixed;
+    overflow-x: hidden;
   }
 
-  .dashboard {
-    max-width: 1600px;
-    margin: 0 auto;
-    width: 100%;
+  /* =========================================================
+     BUBBLES (decoración Frutiger Aero)
+     ========================================================= */
+
+  body::before, body::after {
+    content: '';
+    position: fixed;
+    border-radius: 50%;
+    z-index: 0;
+    pointer-events: none;
   }
+
+  body::before {
+    width: 320px; height: 320px;
+    background: radial-gradient(circle, rgba(47,158,216,0.08) 0%, transparent 70%);
+    top: -60px; right: -80px;
+  }
+
+  body::after {
+    width: 240px; height: 240px;
+    background: radial-gradient(circle, rgba(76,184,112,0.07) 0%, transparent 70%);
+    bottom: 10%; left: -40px;
+  }
+
+  .bubbles {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    z-index: 0;
+    pointer-events: none;
+    overflow: hidden;
+  }
+
+  .bubble {
+    position: absolute;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.6), rgba(47,158,216,0.08));
+    border: 1px solid rgba(255,255,255,0.5);
+    box-shadow: inset 0 -2px 6px rgba(0,80,160,0.04);
+    animation: float linear infinite;
+    opacity: 0.5;
+  }
+
+  @keyframes float {
+    0% { transform: translateY(100vh) scale(0.4); opacity: 0; }
+    10% { opacity: 0.5; }
+    90% { opacity: 0.5; }
+    100% { transform: translateY(-120px) scale(1); opacity: 0; }
+  }
+
+  /* =========================================================
+     DASHBOARD CONTAINER
+     ========================================================= */
+
+  .dashboard {
+    position: relative;
+    z-index: 1;
+    max-width: 1520px;
+    margin: 0 auto;
+    padding: 20px 24px 40px;
+  }
+
+  /* =========================================================
+     HEADER
+     ========================================================= */
 
   .header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 28px;
+    margin-bottom: 24px;
     flex-wrap: wrap;
-    gap: 16px;
+    gap: 14px;
   }
 
   .header-left {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 14px;
   }
 
   .logo {
-    width: 48px;
-    height: 48px;
-    background: linear-gradient(135deg, #3b82f6, #06b6d4);
-    border-radius: 14px;
+    width: 52px; height: 52px;
+    background: linear-gradient(145deg, #5bc0f8 0%, #2f9ed8 50%, #1a6fa8 100%);
+    border-radius: 16px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 24px;
+    font-size: 22px;
     font-weight: 800;
     color: #fff;
-    flex-shrink: 0;
+    box-shadow:
+      0 4px 16px rgba(47,158,216,0.35),
+      inset 0 1px 0 rgba(255,255,255,0.5),
+      inset 0 -2px 4px rgba(0,60,140,0.2);
+    border: 1px solid rgba(255,255,255,0.4);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .logo::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 50%;
+    background: linear-gradient(180deg, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0.0) 100%);
+    border-radius: 16px 16px 0 0;
   }
 
   .header h1 {
-    font-size: 26px;
+    font-size: 28px;
     font-weight: 700;
-    background: linear-gradient(135deg, #60a5fa, #2dd4bf);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    color: var(--aero-blue-dark);
+    text-shadow: 0 1px 0 rgba(255,255,255,0.8);
   }
 
   .header .subtitle {
-    font-size: 13px;
-    color: #94a3b8;
-    -webkit-text-fill-color: #94a3b8;
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-top: 1px;
   }
 
   .status-badge {
     display: flex;
     align-items: center;
     gap: 8px;
-    background: #1e293b;
-    padding: 8px 18px;
-    border-radius: 20px;
-    font-size: 14px;
-    border: 1px solid #334155;
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    padding: 8px 16px;
+    border-radius: 24px;
+    font-size: 13px;
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
     flex-wrap: wrap;
   }
 
   .status-dot {
-    width: 10px;
-    height: 10px;
+    width: 10px; height: 10px;
     border-radius: 50%;
-    background: #22c55e;
-    animation: ping 2s infinite;
+    background: var(--aero-green);
+    box-shadow: 0 0 8px rgba(76,184,112,0.5);
+    animation: pulse 2s infinite;
   }
 
-  @keyframes ping { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 8px rgba(76,184,112,0.5); }
+    50% { box-shadow: 0 0 16px rgba(76,184,112,0.8); }
+  }
 
   #serverStatus {
-    font-size: 12px;
-    color: #64748b;
-    margin-left: 6px;
+    font-size: 11px;
+    color: var(--text-light);
   }
 
   .gold-badge {
-    background: #3b82f6;
+    background: linear-gradient(135deg, #5bc0f8, #2f9ed8);
     color: #fff;
-    padding: 2px 10px;
-    border-radius: 8px;
+    padding: 3px 10px;
+    border-radius: 10px;
     font-size: 11px;
     font-weight: 600;
-    margin-left: 4px;
+    box-shadow: 0 2px 6px rgba(47,158,216,0.3);
+    border: 1px solid rgba(255,255,255,0.3);
   }
+
+  /* =========================================================
+     GLASS CARD (base para todos los paneles)
+     ========================================================= */
+
+  .glass {
+    background: var(--glass-bg);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--card-radius);
+    box-shadow: var(--glass-shadow);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .glass::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 45%;
+    background: var(--glass-gloss);
+    pointer-events: none;
+    border-radius: var(--card-radius) var(--card-radius) 0 0;
+  }
+
+  /* =========================================================
+     SENSOR GRID
+     ========================================================= */
 
   .sensor-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 14px;
-    margin-bottom: 22px;
+    margin-bottom: 20px;
   }
 
   .sensor-card {
-    background: #1e293b;
-    border-radius: 14px;
     padding: 18px;
-    border: 1px solid #334155;
-    transition: border-color .2s;
+    transition: transform 0.2s, box-shadow 0.2s;
   }
 
-  .sensor-card:hover { border-color: #3b82f6; }
+  .sensor-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 40px rgba(0,80,160,0.14), 0 4px 12px rgba(0,60,140,0.08);
+  }
 
   .sensor-card .top {
     display: flex;
     align-items: center;
     gap: 10px;
-    margin-bottom: 12px;
+    margin-bottom: 14px;
   }
 
   .sensor-card .icon {
-    width: 36px;
-    height: 36px;
-    border-radius: 10px;
+    width: 40px; height: 40px;
+    border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 18px;
     flex-shrink: 0;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.4);
+    border: 1px solid rgba(255,255,255,0.3);
+    position: relative;
+  }
+
+  .sensor-card .icon::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 50%;
+    background: linear-gradient(180deg, rgba(255,255,255,0.4) 0%, transparent 100%);
+    border-radius: 12px 12px 0 0;
   }
 
   .sensor-card .name {
     font-weight: 600;
     font-size: 14px;
+    color: var(--text);
   }
 
   .sensor-card .chip {
     font-size: 11px;
-    color: #94a3b8;
+    color: var(--text-dim);
     margin-top: 1px;
   }
 
@@ -159,55 +304,62 @@
   .sensor-card .value {
     font-size: 28px;
     font-weight: 700;
+    color: var(--aero-blue-dark);
+    text-shadow: 0 1px 0 rgba(255,255,255,0.6);
   }
 
   .sensor-card .unit {
-    font-size: 14px;
-    color: #94a3b8;
-    margin-left: 4px;
+    font-size: 13px;
+    color: var(--text-dim);
+    margin-left: 3px;
   }
 
   .sensor-card .trend {
-    font-size: 13px;
+    font-size: 12px;
+    font-weight: 600;
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 3px;
   }
 
-  .trend.up { color: #f87171; }
-  .trend.down { color: #22c55e; }
-  .trend.normal { color: #94a3b8; }
+  .trend.up { color: var(--aero-red); }
+  .trend.down { color: var(--aero-green); }
+  .trend.normal { color: var(--text-light); }
+
+  /* =========================================================
+     CHART PANELS
+     ========================================================= */
 
   .main-grid {
     display: grid;
     grid-template-columns: 2fr 1fr;
-    gap: 18px;
-    margin-bottom: 22px;
+    gap: 16px;
+    margin-bottom: 18px;
   }
 
   .chart-panel {
-    background: #1e293b;
-    border-radius: 14px;
     padding: 20px;
-    border: 1px solid #334155;
   }
 
   .chart-panel h3 {
     font-size: 15px;
     font-weight: 600;
-    margin-bottom: 14px;
+    color: var(--text);
+    margin-bottom: 12px;
     display: flex;
     align-items: center;
     justify-content: space-between;
+    text-shadow: 0 1px 0 rgba(255,255,255,0.6);
   }
 
   .chart-panel h3 .badge {
-    font-size: 11px;
-    background: #334155;
+    font-size: 10px;
+    background: linear-gradient(135deg, rgba(47,158,216,0.12), rgba(47,158,216,0.06));
+    color: var(--aero-blue);
     padding: 3px 10px;
     border-radius: 10px;
-    font-weight: 400;
-    color: #cbd5e1;
+    font-weight: 600;
+    border: 1px solid rgba(47,158,216,0.15);
   }
 
   .chart-container {
@@ -218,81 +370,111 @@
   .bottom-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 18px;
-    margin-bottom: 22px;
+    gap: 16px;
+    margin-bottom: 18px;
   }
+
+  /* =========================================================
+     HEALTH SUMMARY CARDS
+     ========================================================= */
 
   .health-summary {
     display: grid;
     grid-template-columns: repeat(6, 1fr);
     gap: 14px;
-    margin-top: 18px;
+    margin-bottom: 20px;
   }
 
   .health-card {
-    background: #1e293b;
-    border-radius: 14px;
-    padding: 18px;
-    border: 1px solid #334155;
+    padding: 18px 14px;
     text-align: center;
+    transition: transform 0.2s;
   }
 
+  .health-card:hover { transform: translateY(-2px); }
+
   .health-card .label {
-    font-size: 11px;
-    color: #94a3b8;
+    font-size: 10px;
+    color: var(--text-dim);
     text-transform: uppercase;
     letter-spacing: 0.5px;
     margin-bottom: 6px;
+    font-weight: 600;
   }
 
   .health-card .big-value {
     font-size: 28px;
     font-weight: 700;
+    color: var(--aero-blue-dark);
+    text-shadow: 0 1px 0 rgba(255,255,255,0.6);
   }
 
   .health-card .sub {
-    font-size: 11px;
-    color: #64748b;
+    font-size: 10px;
+    color: var(--text-light);
     margin-top: 4px;
   }
 
-  .status-good { color: #22c55e; }
-  .status-warn { color: #eab308; }
-  .status-bad { color: #ef4444; }
+  .status-good { color: var(--aero-green-dark) !important; }
+  .status-warn { color: var(--aero-orange) !important; }
+  .status-bad { color: var(--aero-red) !important; }
+
+  /* =========================================================
+     TIMELINE
+     ========================================================= */
 
   .timeline-panel {
-    max-height: 320px;
+    max-height: 340px;
     overflow-y: auto;
   }
 
-  .timeline-panel::-webkit-scrollbar { width: 4px; }
-  .timeline-panel::-webkit-scrollbar-thumb { background: #334155; border-radius: 2px; }
+  .timeline-panel::-webkit-scrollbar { width: 5px; }
+  .timeline-panel::-webkit-scrollbar-track { background: transparent; }
+  .timeline-panel::-webkit-scrollbar-thumb { background: rgba(47,158,216,0.2); border-radius: 3px; }
 
   .timeline-item {
     display: flex;
     gap: 12px;
     padding: 10px 0;
-    border-bottom: 1px solid #1e293b;
+    border-bottom: 1px solid rgba(47,158,216,0.06);
   }
 
   .timeline-item:last-child { border-bottom: none; }
 
   .timeline-dot {
-    width: 10px;
-    height: 10px;
+    width: 10px; height: 10px;
     border-radius: 50%;
     margin-top: 4px;
     flex-shrink: 0;
+    box-shadow: 0 0 6px rgba(0,0,0,0.08);
   }
 
-  .dot-info { background: #3b82f6; }
-  .dot-warn { background: #eab308; }
-  .dot-danger { background: #ef4444; }
-  .dot-success { background: #22c55e; }
+  .dot-info { background: var(--aero-blue); }
+  .dot-warn { background: var(--aero-orange); }
+  .dot-danger { background: var(--aero-red); box-shadow: 0 0 8px rgba(226,85,85,0.4); }
+  .dot-success { background: var(--aero-green); }
 
-  .timeline-content .tl-title { font-size: 13px; font-weight: 600; }
-  .timeline-content .tl-desc { font-size: 12px; color: #94a3b8; margin-top: 2px; }
-  .timeline-content .tl-time { font-size: 11px; color: #64748b; margin-top: 2px; }
+  .timeline-content .tl-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .timeline-content .tl-desc {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-top: 2px;
+  }
+
+  .timeline-content .tl-time {
+    font-size: 10px;
+    color: var(--text-light);
+    margin-top: 2px;
+  }
+
+  /* =========================================================
+     COMPACT TABLE
+     ========================================================= */
 
   .compact-table {
     width: 100%;
@@ -302,25 +484,25 @@
 
   .compact-table th {
     text-align: left;
-    color: #94a3b8;
-    font-weight: 500;
-    padding: 6px 8px;
-    border-bottom: 1px solid #334155;
+    color: var(--text-dim);
+    font-weight: 600;
+    padding: 8px 10px;
+    border-bottom: 2px solid rgba(47,158,216,0.1);
     font-size: 11px;
     text-transform: uppercase;
     letter-spacing: 0.3px;
   }
 
   .compact-table td {
-    padding: 8px;
-    border-bottom: 1px solid #1e293b;
+    padding: 9px 10px;
+    border-bottom: 1px solid rgba(47,158,216,0.05);
   }
 
   .compact-table tr:last-child td { border-bottom: none; }
 
   .bar-bg {
     height: 6px;
-    background: #1e293b;
+    background: rgba(47,158,216,0.08);
     border-radius: 3px;
     overflow: hidden;
     width: 100px;
@@ -334,61 +516,58 @@
 
   .ref-note {
     font-size: 10px;
-    color: #475569;
-    margin-top: 10px;
-    border-top: 1px solid #1e293b;
+    color: var(--text-light);
+    margin-top: 12px;
+    border-top: 1px solid rgba(47,158,216,0.06);
     padding-top: 8px;
-    line-height: 1.5;
+    line-height: 1.6;
   }
 
+  /* =========================================================
+     ERROR BANNER
+     ========================================================= */
+
   .error-banner {
-    background: #7f1d1d;
-    border: 1px solid #ef4444;
-    color: #fca5a5;
+    background: linear-gradient(135deg, rgba(226,85,85,0.1), rgba(226,85,85,0.05));
+    border: 1px solid rgba(226,85,85,0.25);
+    color: #a83232;
     padding: 12px 18px;
-    border-radius: 10px;
+    border-radius: 14px;
     margin-bottom: 18px;
     font-size: 14px;
     display: none;
     align-items: center;
     gap: 10px;
+    backdrop-filter: blur(8px);
   }
 
   .error-banner .retry-btn {
     margin-left: auto;
-    background: #ef4444;
+    background: linear-gradient(135deg, #e25555, #c93c3c);
     color: #fff;
     border: none;
-    padding: 4px 14px;
-    border-radius: 6px;
+    padding: 6px 16px;
+    border-radius: 10px;
     cursor: pointer;
     font-size: 12px;
+    font-weight: 600;
+    box-shadow: 0 3px 10px rgba(226,85,85,0.3), inset 0 1px 0 rgba(255,255,255,0.3);
+    border: 1px solid rgba(255,255,255,0.2);
   }
+
+  .error-banner .retry-btn:active { transform: scale(0.97); }
 
   .loading-overlay {
     display: flex;
     align-items: center;
     justify-content: center;
     height: 200px;
-    color: #64748b;
+    color: var(--text-light);
     font-size: 14px;
   }
 
-  @media (max-width: 1100px) {
-    .sensor-grid { grid-template-columns: repeat(2, 1fr); }
-    .main-grid { grid-template-columns: 1fr; }
-    .bottom-grid { grid-template-columns: 1fr; }
-    .health-summary { grid-template-columns: repeat(3, 1fr); }
-  }
-
-  @media (max-width: 600px) {
-    .sensor-grid { grid-template-columns: 1fr; }
-    .health-summary { grid-template-columns: repeat(2, 1fr); }
-    body { padding: 12px; }
-  }
-
   /* =========================================================
-     CLASIFICACION DE CRITICIDAD
+     CRITICITY SECTION
      ========================================================= */
 
   .crit-section {
@@ -402,17 +581,14 @@
     display: flex;
     align-items: center;
     gap: 8px;
+    color: var(--text);
+    text-shadow: 0 1px 0 rgba(255,255,255,0.6);
   }
 
-  .crit-section h2 .icon-medical {
-    font-size: 20px;
-  }
+  .crit-section h2 .icon-medical { font-size: 20px; }
 
   .crit-table-wrap {
-    background: #1e293b;
-    border-radius: 14px;
-    border: 1px solid #334155;
-    overflow: hidden;
+    padding: 0;
   }
 
   .crit-table {
@@ -423,61 +599,52 @@
 
   .crit-table th {
     text-align: left;
-    color: #94a3b8;
-    font-weight: 500;
+    color: var(--text-dim);
+    font-weight: 600;
     padding: 10px 14px;
-    border-bottom: 1px solid #334155;
+    border-bottom: 2px solid rgba(47,158,216,0.1);
     font-size: 11px;
     text-transform: uppercase;
     letter-spacing: 0.3px;
   }
 
-  .crit-table th:first-child { border-top-left-radius: 0; }
-  .crit-table thead th:first-child { padding-left: 14px; }
-
   .crit-table td {
     padding: 11px 14px;
-    border-bottom: 1px solid #1e293b;
+    border-bottom: 1px solid rgba(47,158,216,0.05);
     font-size: 12px;
   }
 
   .crit-table tr:last-child td { border-bottom: none; }
 
   .critical {
-    background: rgba(239, 68, 68, 0.08);
-    border-left: 3px solid #ef4444;
+    background: linear-gradient(90deg, rgba(226,85,85,0.08), rgba(226,85,85,0.02));
+    border-left: 3px solid var(--aero-red);
   }
 
   .moderate {
-    background: rgba(234, 179, 8, 0.08);
-    border-left: 3px solid #eab308;
+    background: linear-gradient(90deg, rgba(232,148,58,0.08), rgba(232,148,58,0.02));
+    border-left: 3px solid var(--aero-orange);
   }
 
   .stable {
-    background: rgba(34, 197, 94, 0.05);
-    border-left: 3px solid #22c55e;
-  }
-
-  .crit-rank {
-    font-size: 11px;
-    width: 28px;
-    font-weight: 700;
+    background: linear-gradient(90deg, rgba(76,184,112,0.06), rgba(76,184,112,0.01));
+    border-left: 3px solid var(--aero-green);
   }
 
   .rank-badge {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 24px;
-    height: 24px;
-    border-radius: 6px;
+    width: 26px; height: 26px;
+    border-radius: 8px;
     font-size: 11px;
     font-weight: 700;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.4);
   }
 
-  .rank-badge.crit { background: rgba(239,68,68,0.2); color: #ef4444; }
-  .rank-badge.moderate { background: rgba(234,179,8,0.2); color: #eab308; }
-  .rank-badge.stable { background: rgba(34,197,94,0.15); color: #22c55e; }
+  .rank-badge.crit { background: linear-gradient(135deg, #f87171, #e25555); color: #fff; }
+  .rank-badge.moderate { background: linear-gradient(135deg, #fbbf24, #e8943a); color: #fff; }
+  .rank-badge.stable { background: linear-gradient(135deg, #4cb870, #2e9a52); color: #fff; }
 
   .crit-label {
     display: inline-flex;
@@ -485,13 +652,15 @@
     gap: 4px;
     font-size: 11px;
     font-weight: 600;
-    padding: 2px 8px;
+    padding: 3px 10px;
     border-radius: 10px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05), inset 0 1px 0 rgba(255,255,255,0.4);
+    border: 1px solid rgba(255,255,255,0.3);
   }
 
-  .crit-label.high { background: rgba(239,68,68,0.2); color: #fca5a5; }
-  .crit-label.medium { background: rgba(234,179,8,0.2); color: #fde047; }
-  .crit-label.low { background: rgba(34,197,94,0.15); color: #86efac; }
+  .crit-label.high { background: linear-gradient(135deg, #fca5a5, #f87171); color: #fff; }
+  .crit-label.medium { background: linear-gradient(135deg, #fde047, #fbbf24); color: #7c5c00; }
+  .crit-label.low { background: linear-gradient(135deg, #86efac, #4cb870); color: #fff; }
 
   .crit-value-cell {
     display: flex;
@@ -501,7 +670,7 @@
 
   .crit-bar-bg {
     height: 8px;
-    background: #0f172a;
+    background: rgba(47,158,216,0.08);
     border-radius: 4px;
     overflow: hidden;
     flex: 1;
@@ -514,9 +683,9 @@
     transition: width .6s ease;
   }
 
-  .crit-bar-fill.crit { background: linear-gradient(90deg, #ef4444, #dc2626); }
-  .crit-bar-fill.moderate { background: linear-gradient(90deg, #eab308, #d97706); }
-  .crit-bar-fill.stable { background: linear-gradient(90deg, #22c55e, #16a34a); }
+  .crit-bar-fill.crit { background: linear-gradient(90deg, #f87171, #e25555); }
+  .crit-bar-fill.moderate { background: linear-gradient(90deg, #fbbf24, #e8943a); }
+  .crit-bar-fill.stable { background: linear-gradient(90deg, #4cb870, #2e9a52); }
 
   .crit-dev {
     font-size: 12px;
@@ -526,44 +695,69 @@
 
   .crit-summary-row {
     display: flex;
-    gap: 16px;
+    gap: 14px;
     margin-bottom: 16px;
     flex-wrap: wrap;
   }
 
   .crit-stat {
-    background: #1e293b;
-    border-radius: 12px;
-    padding: 14px 20px;
-    border: 1px solid #334155;
     flex: 1;
     min-width: 140px;
     text-align: center;
+    padding: 16px;
   }
 
   .crit-stat .stat-label {
-    font-size: 11px;
-    color: #94a3b8;
+    font-size: 10px;
+    color: var(--text-dim);
     text-transform: uppercase;
     letter-spacing: 0.5px;
     margin-bottom: 6px;
+    font-weight: 600;
   }
 
   .crit-stat .stat-value {
-    font-size: 24px;
+    font-size: 26px;
     font-weight: 700;
+    text-shadow: 0 1px 0 rgba(255,255,255,0.6);
   }
 
   .crit-stat .stat-sub {
-    font-size: 11px;
-    color: #64748b;
+    font-size: 10px;
+    color: var(--text-light);
     margin-top: 4px;
+  }
+
+  /* =========================================================
+     RESPONSIVE
+     ========================================================= */
+
+  @media (max-width: 1100px) {
+    .sensor-grid { grid-template-columns: repeat(2, 1fr); }
+    .main-grid { grid-template-columns: 1fr; }
+    .bottom-grid { grid-template-columns: 1fr; }
+    .health-summary { grid-template-columns: repeat(3, 1fr); }
+  }
+
+  @media (max-width: 600px) {
+    .sensor-grid { grid-template-columns: 1fr; }
+    .health-summary { grid-template-columns: repeat(2, 1fr); }
+    .dashboard { padding: 12px; }
+    .header h1 { font-size: 22px; }
+    .logo { width: 42px; height: 42px; }
   }
 </style>
 </head>
 <body>
 
+<!-- Burbujas decorativas Frutiger Aero -->
+<div class="bubbles" id="bubbles"></div>
+
 <div class="dashboard">
+
+  <!-- =========================================================
+       HEADER
+       ========================================================= -->
 
   <div class="header">
     <div class="header-left">
@@ -574,24 +768,29 @@
       </div>
     </div>
     <div class="status-badge">
-      <a href="/mobile" style="color:#60a5fa;text-decoration:none;font-size:12px;font-weight:600;margin-right:6px;border-right:1px solid #334155;padding-right:10px;">&#128241; M&oacute;vil</a>
+      <a href="/mobile" style="color:var(--aero-blue);text-decoration:none;font-size:12px;font-weight:600;margin-right:6px;border-right:1px solid rgba(47,158,216,0.2);padding-right:10px;">&#128241; M&oacute;vil</a>
       <span class="status-dot"></span>
       <span id="serverLabel">Conectando...</span>
       <span id="goldStageBadge" class="gold-badge"></span>
-      <span id="sourceBadge" class="gold-badge" style="background:#6366f1;"></span>
+      <span id="sourceBadge" class="gold-badge" style="background:linear-gradient(135deg,#8b6cc1,#6b4fa0);"></span>
       <span id="serverStatus"></span>
     </div>
   </div>
 
+  <!-- Error Banner -->
   <div class="error-banner" id="errorBanner">
     &#9888; <span id="errorMsg">Error al conectar con el servidor de sensores.</span>
     <button class="retry-btn" onclick="connect()">Reintentar</button>
   </div>
 
+  <!-- =========================================================
+       SENSOR CARDS
+       ========================================================= -->
+
   <div class="sensor-grid" id="sensorCards">
-    <div class="sensor-card">
+    <div class="sensor-card glass">
       <div class="top">
-        <div class="icon" style="background:#1e3a5f;color:#60a5fa;">&#9881;</div>
+        <div class="icon" style="background:linear-gradient(135deg,#5bc0f8,#2f9ed8);color:#fff;">&#9881;</div>
         <div>
           <div class="name">Elecbee-6701 GSR</div>
           <div class="chip">Actividad Simp&aacute;tica (SSR)</div>
@@ -603,9 +802,9 @@
       </div>
     </div>
 
-    <div class="sensor-card">
+    <div class="sensor-card glass">
       <div class="top">
-        <div class="icon" style="background:#1e3a3a;color:#2dd4bf;">&#969;</div>
+        <div class="icon" style="background:linear-gradient(135deg,#5eead4,#14b8a6);color:#fff;">&#969;</div>
         <div>
           <div class="name">MPU-6050</div>
           <div class="chip">Movimiento Tor&aacute;cico (IMU)</div>
@@ -617,9 +816,9 @@
       </div>
     </div>
 
-    <div class="sensor-card">
+    <div class="sensor-card glass">
       <div class="top">
-        <div class="icon" style="background:#3a2e1e;color:#fbbf24;">&#8982;</div>
+        <div class="icon" style="background:linear-gradient(135deg,#fcd34d,#f59e0b);color:#fff;">&#8982;</div>
         <div>
           <div class="name">HC-SR04</div>
           <div class="chip">Excursi&oacute;n Diafragm&aacute;tica</div>
@@ -631,9 +830,9 @@
       </div>
     </div>
 
-    <div class="sensor-card">
+    <div class="sensor-card glass">
       <div class="top">
-        <div class="icon" style="background:#3a1e2e;color:#f472b6;">&#127908;</div>
+        <div class="icon" style="background:linear-gradient(135deg,#f9a8d4,#ec4899);color:#fff;">&#127908;</div>
         <div>
           <div class="name">INMP441</div>
           <div class="chip">Sibilancias / Estertores</div>
@@ -646,34 +845,42 @@
     </div>
   </div>
 
+  <!-- =========================================================
+       CHARTS PRINCIPALES
+       ========================================================= -->
+
   <div class="main-grid">
-    <div class="chart-panel">
+    <div class="chart-panel glass">
       <h3>Patr&oacute;n Respiratorio <span class="badge">EPOC vs Pulm&oacute;n Sano</span></h3>
       <div class="chart-container" style="height:260px;">
         <canvas id="breathingChart"></canvas>
       </div>
     </div>
-    <div class="chart-panel">
+    <div class="chart-panel glass">
       <h3>&Iacute;ndice de Salud Respiratorio</h3>
       <div class="chart-container" style="height:220px;">
         <canvas id="radarChart"></canvas>
       </div>
-      <div style="text-align:center;margin-top:6px;">
-        <span style="font-size:28px;font-weight:700;" id="healthScore">--</span>
-        <span style="font-size:14px;color:#94a3b8;">/ 100</span>
-        <div style="font-size:13px;margin-top:2px;" id="healthLabel">--</div>
+      <div style="text-align:center;margin-top:8px;">
+        <span style="font-size:30px;font-weight:700;color:var(--aero-blue-dark);text-shadow:0 1px 0 rgba(255,255,255,0.6);" id="healthScore">--</span>
+        <span style="font-size:14px;color:var(--text-dim);">/ 100</span>
+        <div style="font-size:13px;margin-top:2px;color:var(--text-dim);" id="healthLabel">--</div>
       </div>
     </div>
   </div>
 
+  <!-- =========================================================
+       GSR Y AUDIO
+       ========================================================= -->
+
   <div class="bottom-grid">
-    <div class="chart-panel">
+    <div class="chart-panel glass">
       <h3>Respuesta Galv&aacute;nica (GSR) <span class="badge">Bir et al. 2005</span></h3>
       <div class="chart-container" style="height:200px;">
         <canvas id="gsrChart"></canvas>
       </div>
     </div>
-    <div class="chart-panel">
+    <div class="chart-panel glass">
       <h3>Espectro de Sonido (INMP441) <span class="badge">Sang et al. 2024</span></h3>
       <div class="chart-container" style="height:200px;">
         <canvas id="audioChart"></canvas>
@@ -681,8 +888,12 @@
     </div>
   </div>
 
+  <!-- =========================================================
+       COMPARATIVA Y TIMELINE
+       ========================================================= -->
+
   <div class="bottom-grid">
-    <div class="chart-panel">
+    <div class="chart-panel glass">
       <h3>Comparativa: EPOC vs Pulm&oacute;n Sano</h3>
       <table class="compact-table">
         <thead>
@@ -699,7 +910,7 @@
         HRV (CLEAN AIR Heart, J COPD F 2024)
       </div>
     </div>
-    <div class="chart-panel">
+    <div class="chart-panel glass">
       <h3>L&iacute;nea de Eventos <span class="badge">Tiempo Real</span></h3>
       <div class="timeline-panel" id="timeline">
         <div class="loading-overlay">Esperando datos...</div>
@@ -707,71 +918,74 @@
     </div>
   </div>
 
+  <!-- =========================================================
+       HEALTH SUMMARY
+       ========================================================= -->
+
   <div class="health-summary">
-    <div class="health-card">
+    <div class="health-card glass">
       <div class="label">Frecuencia Resp.</div>
       <div class="big-value" id="respRate">--</div>
       <div class="sub">rpm (sano: 12-20)</div>
     </div>
-    <div class="health-card">
+    <div class="health-card glass">
       <div class="label">SpO2</div>
       <div class="big-value" id="spo2">--</div>
       <div class="sub">% (sano: 96-98%)</div>
     </div>
-    <div class="health-card">
+    <div class="health-card glass">
       <div class="label">Expansi&oacute;n Tor&aacute;cica</div>
       <div class="big-value" id="chestExpand">--</div>
       <div class="sub">cm (sano: 5-7 cm)</div>
     </div>
-    <div class="health-card">
+    <div class="health-card glass">
       <div class="label">&Iacute;ndice de Esfuerzo</div>
       <div class="big-value" id="effortIndex">--</div>
       <div class="sub">% (sano: &lt;30%)</div>
     </div>
-    <div class="health-card">
+    <div class="health-card glass">
       <div class="label">HRV (SDNN)</div>
       <div class="big-value" id="hrv">--</div>
       <div class="sub">ms (sano: &gt;50 ms)</div>
     </div>
-    <div class="health-card">
+    <div class="health-card glass">
       <div class="label">FEV1</div>
       <div class="big-value" id="fev1">--</div>
       <div class="sub">% pred. (sano: &gt;80%)</div>
     </div>
   </div>
 
-  </div>
-
   <!-- =========================================================
-       CLASIFICACION DE CRITICIDAD - PARA VISUALIZACION MEDICA
+       CLASIFICACION DE CRITICIDAD
        ========================================================= -->
+
   <div class="crit-section">
-    <h2><span class="icon-medical">&#9888;</span> Clasificaci&oacute;n de Criticidad <span class="badge">Orden: M&aacute;s Cr&iacute;tica &rarr; Menos Cr&iacute;tica</span></h2>
+    <h2><span class="icon-medical">&#9888;</span> Clasificaci&oacute;n de Criticidad <span class="badge" style="font-size:10px;background:linear-gradient(135deg,rgba(47,158,216,0.12),rgba(47,158,216,0.06));color:var(--aero-blue);padding:3px 10px;border-radius:10px;border:1px solid rgba(47,158,216,0.15);font-weight:600;">M&aacute;s Cr&iacute;tica &rarr; Menos</span></h2>
 
     <div class="crit-summary-row">
-      <div class="crit-stat">
+      <div class="crit-stat glass">
         <div class="stat-label">M&eacute;tricas Cr&iacute;ticas</div>
-        <div class="stat-value" id="critCount" style="color:#ef4444;">--</div>
-        <div class="stat-sub">de 12 monitoreadas
+        <div class="stat-value" id="critCount" style="color:var(--aero-red);">--</div>
+        <div class="stat-sub">de 12 monitoreadas</div>
       </div>
-      <div class="crit-stat">
+      <div class="crit-stat glass">
         <div class="stat-label">Moderadas</div>
-        <div class="stat-value" id="modCount" style="color:#eab308;">--</div>
+        <div class="stat-value" id="modCount" style="color:var(--aero-orange);">--</div>
         <div class="stat-sub">Requieren atenci&oacute;n</div>
       </div>
-      <div class="crit-stat">
+      <div class="crit-stat glass">
         <div class="stat-label">Estable</div>
-        <div class="stat-value" id="stableCount" style="color:#22c55e;">--</div>
+        <div class="stat-value" id="stableCount" style="color:var(--aero-green);">--</div>
         <div class="stat-sub">Dentro de rangos</div>
       </div>
-      <div class="crit-stat">
+      <div class="crit-stat glass">
         <div class="stat-label">Puntaje Total</div>
-        <div class="stat-value" id="totalScore" style="color:#3b82f6;">--</div>
+        <div class="stat-value" id="totalScore" style="color:var(--aero-blue);">--</div>
         <div class="stat-sub">de 0 a 100</div>
       </div>
     </div>
 
-    <div class="crit-table-wrap">
+    <div class="crit-table-wrap glass">
       <table class="crit-table">
         <thead>
           <tr>
@@ -787,15 +1001,36 @@
       </table>
       <div class="ref-note">
         <strong>Leyenda de Criticidad:</strong>
-        <span style="color:#ef4444;font-weight:600;">Cr&iacute;tica (&ge;70)</span> &bull;
-        <span style="color:#eab308;font-weight:600;">Moderada (30-69)</span> &bull;
-        <span style="color:#22c55e;font-weight:600;">Estable (&lt;30)</span> &bull;
+        <span style="color:var(--aero-red);font-weight:600;">Cr&iacute;tica (&ge;70)</span> &bull;
+        <span style="color:var(--aero-orange);font-weight:600;">Moderada (30-69)</span> &bull;
+        <span style="color:var(--aero-green);font-weight:600;">Estable (&lt;30)</span> &bull;
         La puntuaci&oacute;n combina desviaci&oacute;n porcentual, gravedad cl&iacute;nica y umbrales de riesgo.
       </div>
     </div>
   </div>
 
-  <script>
+</div>
+
+<script>
+// ============================================================
+// BUBBLES - Decoración Frutiger Aero
+// ============================================================
+(function createBubbles() {
+  const container = document.getElementById('bubbles');
+  const count = 12;
+  for (let i = 0; i < count; i++) {
+    const b = document.createElement('div');
+    b.className = 'bubble';
+    const size = 20 + Math.random() * 60;
+    b.style.width = size + 'px';
+    b.style.height = size + 'px';
+    b.style.left = (Math.random() * 100) + '%';
+    b.style.animationDuration = (12 + Math.random() * 18) + 's';
+    b.style.animationDelay = (-Math.random() * 20) + 's';
+    container.appendChild(b);
+  }
+})();
+
 // ============================================================
 // API CONNECTION
 // ============================================================
@@ -822,13 +1057,13 @@ async function fetchData() {
     if (!connected) {
       connected = true;
       hideError();
-      document.querySelector('.status-dot').style.background = '#22c55e';
+      document.querySelector('.status-dot').style.background = '#4cb870';
     }
     return data;
   } catch (err) {
     if (connected) {
       showError('Perdida de conexion. Verifica que sensor_server.py este corriendo.');
-      document.querySelector('.status-dot').style.background = '#ef4444';
+      document.querySelector('.status-dot').style.background = '#e25555';
       connected = false;
     }
     return null;
@@ -838,11 +1073,10 @@ async function fetchData() {
 // ============================================================
 // CHART INIT
 // ============================================================
-Chart.defaults.color = '#94a3b8';
-Chart.defaults.borderColor = '#334155';
+Chart.defaults.color = '#5a7a92';
+Chart.defaults.borderColor = 'rgba(47,158,216,0.08)';
 
 function initCharts() {
-  // Breathing
   const ctxB = document.getElementById('breathingChart').getContext('2d');
   labels80 = Array.from({length: 80}, (_, i) => '');
   zero80 = Array(80).fill(0);
@@ -855,22 +1089,22 @@ function initCharts() {
         {
           label: 'EPOC (Paciente)',
           data: zero80.slice(),
-          borderColor: '#f87171',
-          backgroundColor: 'rgba(248,113,113,0.08)',
-          borderWidth: 2,
+          borderColor: '#e25555',
+          backgroundColor: 'rgba(226,85,85,0.08)',
+          borderWidth: 2.5,
           pointRadius: 0,
           tension: 0.4,
           fill: true,
         },
         {
-          label: 'Pulmon Sano (Referencia)',
+          label: 'Pulmon Sano',
           data: zero80.slice(),
-          borderColor: '#22c55e',
-          backgroundColor: 'rgba(34,197,94,0.08)',
+          borderColor: '#4cb870',
+          backgroundColor: 'rgba(76,184,112,0.06)',
           borderWidth: 2,
           pointRadius: 0,
           tension: 0.4,
-          borderDash: [4, 4],
+          borderDash: [5, 5],
           fill: true,
         }
       ]
@@ -880,20 +1114,19 @@ function initCharts() {
       maintainAspectRatio: false,
       animation: { duration: 200 },
       plugins: {
-        legend: { position: 'top', labels: { boxWidth: 12, padding: 12, font: { size: 11 } } }
+        legend: { position: 'top', labels: { boxWidth: 12, padding: 12, font: { size: 11 }, usePointStyle: true } }
       },
       scales: {
         x: { display: false },
         y: {
           min: -1.8, max: 1.8,
-          grid: { color: '#1e293b' },
+          grid: { color: 'rgba(47,158,216,0.05)' },
           ticks: { font: { size: 10 } }
         }
       }
     }
   });
 
-  // GSR
   const ctxG = document.getElementById('gsrChart').getContext('2d');
   zero40 = Array(40).fill(0);
 
@@ -905,9 +1138,9 @@ function initCharts() {
         {
           label: 'GSR EPOC',
           data: zero40.slice(),
-          borderColor: '#fbbf24',
-          backgroundColor: 'rgba(251,191,36,0.1)',
-          borderWidth: 2,
+          borderColor: '#e8943a',
+          backgroundColor: 'rgba(232,148,58,0.1)',
+          borderWidth: 2.5,
           pointRadius: 0,
           tension: 0.3,
           fill: true,
@@ -915,7 +1148,7 @@ function initCharts() {
         {
           label: 'GSR Sano',
           data: zero40.slice(),
-          borderColor: '#22c55e',
+          borderColor: '#4cb870',
           borderWidth: 1.5,
           pointRadius: 0,
           tension: 0.3,
@@ -929,20 +1162,19 @@ function initCharts() {
       maintainAspectRatio: false,
       animation: { duration: 200 },
       plugins: {
-        legend: { position: 'top', labels: { boxWidth: 12, padding: 10, font: { size: 10 } } }
+        legend: { position: 'top', labels: { boxWidth: 12, padding: 10, font: { size: 10 }, usePointStyle: true } }
       },
       scales: {
         x: { display: false },
         y: {
           min: 0, max: 8,
-          grid: { color: '#1e293b' },
+          grid: { color: 'rgba(47,158,216,0.05)' },
           ticks: { font: { size: 10 }, callback: v => v + ' uS' }
         }
       }
     }
   });
 
-  // Audio
   const ctxA = document.getElementById('audioChart').getContext('2d');
   audioLabels = ['80Hz','200Hz','500Hz','1kHz','2kHz','4kHz','8kHz'];
 
@@ -955,22 +1187,22 @@ function initCharts() {
           label: 'EPOC (sibilancias)',
           data: [0,0,0,0,0,0,0],
           backgroundColor: [
-            'rgba(248,113,113,0.85)', 'rgba(248,113,113,0.75)',
-            'rgba(248,113,113,0.65)', 'rgba(248,113,113,0.55)',
-            'rgba(248,113,113,0.45)', 'rgba(248,113,113,0.35)',
-            'rgba(248,113,113,0.25)'
+            'rgba(226,85,85,0.8)', 'rgba(226,85,85,0.7)',
+            'rgba(226,85,85,0.6)', 'rgba(226,85,85,0.5)',
+            'rgba(226,85,85,0.4)', 'rgba(226,85,85,0.3)',
+            'rgba(226,85,85,0.2)'
           ],
-          borderColor: '#f87171',
+          borderColor: '#e25555',
           borderWidth: 1,
-          borderRadius: 3,
+          borderRadius: 4,
         },
         {
           label: 'Sano',
           data: [0,0,0,0,0,0,0],
-          backgroundColor: 'rgba(34,197,94,0.3)',
-          borderColor: '#22c55e',
+          backgroundColor: 'rgba(76,184,112,0.25)',
+          borderColor: '#4cb870',
           borderWidth: 1,
-          borderRadius: 3,
+          borderRadius: 4,
         }
       ]
     },
@@ -979,20 +1211,19 @@ function initCharts() {
       maintainAspectRatio: false,
       animation: { duration: 200 },
       plugins: {
-        legend: { position: 'top', labels: { boxWidth: 12, padding: 10, font: { size: 10 } } }
+        legend: { position: 'top', labels: { boxWidth: 12, padding: 10, font: { size: 10 }, usePointStyle: true } }
       },
       scales: {
-        x: { grid: { color: '#1e293b' }, ticks: { font: { size: 9 } } },
+        x: { grid: { color: 'rgba(47,158,216,0.05)' }, ticks: { font: { size: 9 } } },
         y: {
           beginAtZero: true, max: 5,
-          grid: { color: '#1e293b' },
+          grid: { color: 'rgba(47,158,216,0.05)' },
           ticks: { font: { size: 10 } }
         }
       }
     }
   });
 
-  // Radar
   const ctxR = document.getElementById('radarChart').getContext('2d');
 
   charts.radar = new Chart(ctxR, {
@@ -1003,21 +1234,25 @@ function initCharts() {
         {
           label: 'EPOC',
           data: [50, 50, 50, 50, 50, 50],
-          borderColor: '#f87171',
-          backgroundColor: 'rgba(248,113,113,0.12)',
-          borderWidth: 2,
-          pointRadius: 3,
-          pointBackgroundColor: '#f87171',
+          borderColor: '#e25555',
+          backgroundColor: 'rgba(226,85,85,0.1)',
+          borderWidth: 2.5,
+          pointRadius: 4,
+          pointBackgroundColor: '#e25555',
+          pointBorderColor: '#fff',
+          pointBorderWidth: 2,
         },
         {
-          label: 'Rango Saludable',
+          label: 'Saludable',
           data: [85, 85, 85, 85, 85, 85],
-          borderColor: '#22c55e',
-          backgroundColor: 'rgba(34,197,94,0.05)',
-          borderWidth: 1.5,
-          borderDash: [4, 4],
-          pointRadius: 2,
-          pointBackgroundColor: '#22c55e44',
+          borderColor: '#4cb870',
+          backgroundColor: 'rgba(76,184,112,0.04)',
+          borderWidth: 2,
+          borderDash: [5, 5],
+          pointRadius: 3,
+          pointBackgroundColor: '#4cb870',
+          pointBorderColor: '#fff',
+          pointBorderWidth: 1,
         }
       ]
     },
@@ -1026,15 +1261,15 @@ function initCharts() {
       maintainAspectRatio: false,
       animation: { duration: 200 },
       plugins: {
-        legend: { position: 'bottom', labels: { boxWidth: 10, padding: 8, font: { size: 10 } } }
+        legend: { position: 'bottom', labels: { boxWidth: 10, padding: 8, font: { size: 10 }, usePointStyle: true } }
       },
       scales: {
         r: {
           min: 0, max: 100,
           ticks: { display: false, stepSize: 25 },
-          grid: { color: '#334155' },
-          angleLines: { color: '#334155' },
-          pointLabels: { font: { size: 9 }, color: '#94a3b8' }
+          grid: { color: 'rgba(47,158,216,0.1)' },
+          angleLines: { color: 'rgba(47,158,216,0.1)' },
+          pointLabels: { font: { size: 10 }, color: '#5a7a92' }
         }
       }
     }
@@ -1057,27 +1292,13 @@ function updateCards(data) {
     const diff = Math.abs((ratio - 1) * 100).toFixed(0);
 
     if (higherIsWorse) {
-      if (ratio > 1.25) {
-        el.className = 'trend up';
-        el.innerHTML = '&#9650; ' + diff + '%';
-      } else if (ratio < 0.85) {
-        el.className = 'trend down';
-        el.innerHTML = '&#9660; ' + diff + '%';
-      } else {
-        el.className = 'trend normal';
-        el.innerHTML = '&#9679; Normal';
-      }
+      if (ratio > 1.25) { el.className = 'trend up'; el.innerHTML = '&#9650; ' + diff + '%'; }
+      else if (ratio < 0.85) { el.className = 'trend down'; el.innerHTML = '&#9660; ' + diff + '%'; }
+      else { el.className = 'trend normal'; el.innerHTML = '&#9679; Normal'; }
     } else {
-      if (ratio < 0.75) {
-        el.className = 'trend down';
-        el.innerHTML = '&#9660; ' + diff + '%';
-      } else if (ratio > 1.25) {
-        el.className = 'trend up';
-        el.innerHTML = '&#9650; ' + diff + '%';
-      } else {
-        el.className = 'trend normal';
-        el.innerHTML = '&#9679; Normal';
-      }
+      if (ratio < 0.75) { el.className = 'trend down'; el.innerHTML = '&#9660; ' + diff + '%'; }
+      else if (ratio > 1.25) { el.className = 'trend up'; el.innerHTML = '&#9650; ' + diff + '%'; }
+      else { el.className = 'trend normal'; el.innerHTML = '&#9679; Normal'; }
     }
   };
 
@@ -1129,7 +1350,6 @@ function updateRadar(data) {
   const p = data.patient;
   const ds = charts.radar.data.datasets;
 
-  // Normalized 0-100 where 100 = healthy
   const normRR = Math.min(95, Math.max(10, 100 - Math.max(0, (p.respRate - 10) / 28 * 100)));
   const normSpO2 = Math.min(95, Math.max(10, (p.spo2 - 75) / 24 * 100));
   const normCE = Math.min(95, Math.max(10, (p.chestExpand / 7.5) * 100));
@@ -1147,43 +1367,35 @@ function updateComparison(data) {
 
   const metrics = [
     { label: 'GSR (SSR)', pulmo: p.gsr.toFixed(2) + ' uS', sano: h.gsr.toFixed(2) + ' uS',
-      deviation: ((p.gsr / h.gsr - 1) * 100).toFixed(1), warn: p.gsr > h.gsr * 1.3,
-      ref: 'Bir et al. 2005' },
+      deviation: ((p.gsr / h.gsr - 1) * 100).toFixed(1), warn: p.gsr > h.gsr * 1.3 },
     { label: 'Mov. Toracico (MPU-6050)', pulmo: p.mpu.toFixed(2) + ' g', sano: h.mpu.toFixed(2) + ' g',
-      deviation: ((1 - p.mpu / h.mpu) * 100).toFixed(1), warn: p.mpu < h.mpu * 0.75,
-      ref: 'De Fazio et al. 2022' },
+      deviation: ((1 - p.mpu / h.mpu) * 100).toFixed(1), warn: p.mpu < h.mpu * 0.75 },
     { label: 'Excursion Diafrag. (HC-SR04)', pulmo: p.hcsr.toFixed(1) + ' cm', sano: h.hcsr.toFixed(1) + ' cm',
-      deviation: ((1 - p.hcsr / h.hcsr) * 100).toFixed(1), warn: p.hcsr < h.hcsr * 0.75,
-      ref: 'Ultrasonido' },
+      deviation: ((1 - p.hcsr / h.hcsr) * 100).toFixed(1), warn: p.hcsr < h.hcsr * 0.75 },
     { label: 'Sibilancias (INMP441)', pulmo: p.inmp.toFixed(1) + ' kHz', sano: h.inmp.toFixed(1) + ' kHz',
-      deviation: ((p.inmp / h.inmp - 1) * 100).toFixed(1), warn: p.inmp > h.inmp * 1.5,
-      ref: 'Sang et al. 2024' },
+      deviation: ((p.inmp / h.inmp - 1) * 100).toFixed(1), warn: p.inmp > h.inmp * 1.5 },
     { label: 'Frecuencia Respiratoria', pulmo: p.respRate.toFixed(0) + ' rpm', sano: h.respRate.toFixed(0) + ' rpm',
-      deviation: ((p.respRate / h.respRate - 1) * 100).toFixed(1), warn: p.respRate > 20 || p.respRate < 12,
-      ref: 'Clinico' },
+      deviation: ((p.respRate / h.respRate - 1) * 100).toFixed(1), warn: p.respRate > 20 || p.respRate < 12 },
     { label: 'SpO2', pulmo: p.spo2.toFixed(0) + ' %', sano: h.spo2.toFixed(0) + ' %',
-      deviation: ((p.spo2 / h.spo2 - 1) * 100).toFixed(1), warn: p.spo2 < 94,
-      ref: 'Oxig. sanguinea' },
+      deviation: ((p.spo2 / h.spo2 - 1) * 100).toFixed(1), warn: p.spo2 < 94 },
     { label: 'HRV (SDNN)', pulmo: p.hrv.toFixed(0) + ' ms', sano: h.hrv.toFixed(0) + ' ms',
-      deviation: ((1 - p.hrv / h.hrv) * 100).toFixed(1), warn: p.hrv < 35,
-      ref: 'CLEAN AIR Heart' },
+      deviation: ((1 - p.hrv / h.hrv) * 100).toFixed(1), warn: p.hrv < 35 },
     { label: 'FEV1 (% predicho)', pulmo: p.fev1.toFixed(0) + ' %', sano: h.fev1.toFixed(0) + ' %',
-      deviation: ((1 - p.fev1 / h.fev1) * 100).toFixed(1), warn: p.fev1 < 80,
-      ref: 'Espirometria' },
+      deviation: ((1 - p.fev1 / h.fev1) * 100).toFixed(1), warn: p.fev1 < 80 },
   ];
 
   const tbody = document.getElementById('comparisonTable');
   tbody.innerHTML = metrics.map(m => {
     const dev = parseFloat(m.deviation);
     const absDev = Math.abs(dev);
-    const color = m.warn ? '#f87171' : '#22c55e';
+    const color = m.warn ? '#e25555' : '#4cb870';
     const barW = Math.min(absDev * 1.2, 100);
     return '<tr>' +
-      '<td style="font-size:12px;">' + m.label + '</td>' +
+      '<td style="font-size:12px;color:var(--text);">' + m.label + '</td>' +
       '<td style="color:' + color + ';font-weight:600;">' + m.pulmo + '</td>' +
-      '<td style="color:#22c55e;">' + m.sano + '</td>' +
+      '<td style="color:#4cb870;">' + m.sano + '</td>' +
       '<td style="color:' + color + ';">' + (dev > 0 ? '+' : '') + dev + '%</td>' +
-      '<td><div class="bar-bg"><div class="bar-fill" style="width:' + barW + '%;background:' + color + ';"></div></div></td>' +
+      '<td><div class="bar-bg"><div class="bar-fill" style="width:' + barW + '%;background:linear-gradient(90deg,' + color + ',' + color + 'dd);"></div></div></td>' +
       '</tr>';
   }).join('');
 }
@@ -1234,25 +1446,23 @@ function updateHealthCards(data) {
   const fev1 = p.fev1;
   setCard('fev1', fev1.toFixed(0), '', fev1 < 40 ? 'status-bad' : fev1 < 70 ? 'status-warn' : 'status-good');
 
-  // Health score
   const hs = p.healthScore;
   const hsEl = document.getElementById('healthScore');
   hsEl.textContent = hs.toFixed(0);
-  hsEl.style.color = hs > 70 ? '#22c55e' : hs > 45 ? '#eab308' : '#ef4444';
+  hsEl.style.color = hs > 70 ? '#2e9a52' : hs > 45 ? '#e8943a' : '#e25555';
 
   const label = document.getElementById('healthLabel');
   if (hs > 70) {
     label.textContent = 'EPOC Estable';
-    label.style.color = '#22c55e';
+    label.style.color = '#2e9a52';
   } else if (hs > 45) {
     label.textContent = 'Exacerbacion moderada';
-    label.style.color = '#eab308';
+    label.style.color = '#e8943a';
   } else {
     label.textContent = 'Exacerbacion severa';
-    label.style.color = '#ef4444';
+    label.style.color = '#e25555';
   }
 
-  // GOLD badge
   const goldEl = document.getElementById('goldStageBadge');
   if (data.goldStage) {
     goldEl.textContent = data.goldLabel || 'GOLD ' + data.goldStage;
@@ -1261,16 +1471,13 @@ function updateHealthCards(data) {
     goldEl.style.display = 'none';
   }
 
-  // Source badge (real ESP32 or simulation)
   const srcEl = document.getElementById('sourceBadge');
   if (data.source === 'esp32_real') {
     srcEl.textContent = 'ESP32 real';
     srcEl.style.display = 'inline-block';
-    srcEl.style.background = '#059669';
   } else {
     srcEl.textContent = 'Simulado';
     srcEl.style.display = 'inline-block';
-    srcEl.style.background = '#6366f1';
   }
 }
 
@@ -1283,7 +1490,6 @@ function classifyMetrics(data) {
   const h = data.healthy;
   const criticalItems = [];
 
-  // Helper: compute criticality score (0-100) and deviation
   function addMetric(label, val, healthyVal, opts) {
     const deviation = ((val / healthyVal - 1) * 100).toFixed(1);
     const absDev = Math.abs(parseFloat(deviation));
@@ -1292,223 +1498,75 @@ function classifyMetrics(data) {
 
     let score = 0;
     let level = 'stable';
-    let color = '#22c55e';
 
-    // Base score from deviation magnitude
     score += Math.min(absDev * 0.6, 40);
 
-    // Additional clinical severity weights
     if (opts.critical) {
-      // opts.critical is a function that returns {score, level} based on clinical thresholds
       const critResult = opts.critical(val, ratio);
       score += critResult.score;
       level = critResult.level;
     }
 
-    // Direction matters
-    if (opts.higherIsWorse && ratio > 1.3) {
-      score += 15;
-    } else if (!opts.higherIsWorse && ratio < 0.75) {
-      score += 15;
-    }
+    if (opts.higherIsWorse && ratio > 1.3) score += 15;
+    else if (!opts.higherIsWorse && ratio < 0.75) score += 15;
 
     score = Math.min(score, 100);
 
-    if (score >= 70) {
-      level = 'critical';
-      color = '#ef4444';
-    } else if (score >= 30) {
-      level = 'moderate';
-      color = '#eab308';
-    } else {
-      level = 'stable';
-      color = '#22c55e';
-    }
+    if (score >= 70) level = 'critical';
+    else if (score >= 30) level = 'moderate';
+    else level = 'stable';
 
     let statusText = 'Estable';
-    if (level === 'critical') statusText = 'Cr&iacute;tiga';
+    if (level === 'critical') statusText = 'Cr&iacute;tica';
     else if (level === 'moderate') statusText = 'Moderada';
 
+    let color = level === 'critical' ? '#e25555' : level === 'moderate' ? '#e8943a' : '#4cb870';
     let unit = opts.unit || '';
     let refRange = opts.refRange || '';
 
     criticalItems.push({
-      label: label,
-      patientVal: val.toFixed(opts.decimals !== undefined ? opts.decimals : 2) + ' ' + unit,
+      label, patientVal: val.toFixed(opts.decimals !== undefined ? opts.decimals : 2) + ' ' + unit,
       refVal: healthyVal.toFixed(opts.decimals !== undefined ? opts.decimals : 2) + ' ' + unit,
-      refRange: refRange,
-      deviation: sign + deviation + '%',
-      absDev: absDev,
-      score: Math.round(score),
-      level: level,
-      color: color,
-      statusText: statusText
+      refRange, deviation: sign + deviation + '%', absDev, score: Math.round(score),
+      level, color, statusText
     });
   }
 
-  // GSR
-  addMetric('GSR (SSR)', p.gsr, h.gsr, {
-    unit: '&micro;S',
-    refRange: '0.5 - 3.5 uS',
-    higherIsWorse: true,
-    critical: (v, r) => {
-      if (v > 6.0) return { score: 60, level: 'critical' };
-      if (v > 4.5) return { score: 30, level: 'moderate' };
-      return { score: 0, level: 'stable' };
-    }
-  });
+  addMetric('GSR (SSR)', p.gsr, h.gsr, { unit: '&micro;S', refRange: '0.5 - 3.5 uS', higherIsWorse: true,
+    critical: (v) => { if (v > 6.0) return {score:60}; if (v > 4.5) return {score:30}; return {score:0}; } });
+  addMetric('Movimiento Tor&aacute;cico (MPU)', p.mpu, h.mpu, { unit: 'g', refRange: '> 0.5 g', higherIsWorse: false,
+    critical: (v, r) => { if (r < 0.50) return {score:55}; if (r < 0.70) return {score:25}; return {score:0}; } });
+  addMetric('Excursi&oacute;n Diafragm&aacute;tica (HC-SR04)', p.hcsr, h.hcsr, { unit: 'cm', refRange: '5 - 7 cm', higherIsWorse: false,
+    critical: (v, r) => { if (r < 0.43) return {score:60}; if (r < 0.71) return {score:30}; return {score:0}; } });
+  addMetric('Sibilancias (INMP441)', p.inmp, h.inmp, { unit: 'kHz', refRange: '< 1.5 kHz', higherIsWorse: true,
+    critical: (v) => { if (v > 5.0) return {score:60}; if (v > 3.0) return {score:35}; return {score:0}; } });
+  addMetric('Frecuencia Respiratoria', p.respRate, h.respRate, { unit: 'rpm', decimals: 0, refRange: '12 - 20 rpm', higherIsWorse: true,
+    critical: (v) => { if (v > 25 || v < 8) return {score:55}; if (v > 22 || v < 10) return {score:25}; return {score:0}; } });
+  addMetric('SpO2', p.spo2, h.spo2, { unit: '%', decimals: 0, refRange: '96 - 98%', higherIsWorse: false,
+    critical: (v) => { if (v < 85) return {score:70}; if (v < 92) return {score:40}; return {score:0}; } });
+  addMetric('Expansi&oacute;n Tor&aacute;cica', p.chestExpand, h.chestExpand, { unit: 'cm', decimals: 1, refRange: '5 - 7 cm', higherIsWorse: false,
+    critical: (v, r) => { if (r < 0.50) return {score:50}; if (r < 0.71) return {score:25}; return {score:0}; } });
+  addMetric('\u00cdndice de Esfuerzo', p.effortIndex, h.effortIndex, { unit: '%', decimals: 0, refRange: '< 30%', higherIsWorse: true,
+    critical: (v) => { if (v > 80) return {score:60}; if (v > 50) return {score:30}; return {score:0}; } });
+  addMetric('HRV (SDNN)', p.hrv, h.hrv, { unit: 'ms', decimals: 0, refRange: '> 50 ms', higherIsWorse: false,
+    critical: (v, r) => { if (r < 0.30) return {score:55}; if (r < 0.60) return {score:25}; return {score:0}; } });
+  addMetric('FEV1 (% predicho)', p.fev1, h.fev1, { unit: '%', decimals: 0, refRange: '> 80%', higherIsWorse: false,
+    critical: (v, r) => { if (r < 0.35) return {score:65}; if (r < 0.60) return {score:30}; return {score:0}; } });
+  addMetric('Puntaje de Salud', p.healthScore !== undefined ? p.healthScore : h.healthScore, 100, { unit: '/100', decimals: 0, refRange: '> 70', higherIsWorse: false,
+    critical: (v) => { if (v < 30) return {score:65}; if (v < 55) return {score:35}; return {score:0}; } });
 
-  // MPU (Toracic movement)
-  addMetric('Movimiento Tor&aacute;cico (MPU)', p.mpu, h.mpu, {
-    unit: 'g',
-    refRange: '> 0.5 g',
-    higherIsWorse: false,
-    critical: (v, r) => {
-      if (r < 0.50) return { score: 55, level: 'critical' };
-      if (r < 0.70) return { score: 25, level: 'moderate' };
-      return { score: 0, level: 'stable' };
-    }
-  });
-
-  // HC-SR04 (Diaphragmatic excursion)
-  addMetric('Excursi&oacute;n Diafragm&aacute;tica (HC-SR04)', p.hcsr, h.hcsr, {
-    unit: 'cm',
-    refRange: '5 - 7 cm',
-    higherIsWorse: false,
-    critical: (v, r) => {
-      if (r < 0.43) return { score: 60, level: 'critical' };
-      if (r < 0.71) return { score: 30, level: 'moderate' };
-      return { score: 0, level: 'stable' };
-    }
-  });
-
-  // INMP441 (Sound/ wheezing)
-  addMetric('Sibilancias (INMP441)', p.inmp, h.inmp, {
-    unit: 'kHz',
-    refRange: '< 1.5 kHz',
-    higherIsWorse: true,
-    critical: (v, r) => {
-      if (v > 5.0) return { score: 60, level: 'critical' };
-      if (v > 3.0) return { score: 35, level: 'moderate' };
-      return { score: 0, level: 'stable' };
-    }
-  });
-
-  // Respiratory Rate
-  addMetric('Frecuencia Respiratoria', p.respRate, h.respRate, {
-    unit: 'rpm',
-    decimals: 0,
-    refRange: '12 - 20 rpm',
-    higherIsWorse: true,
-    critical: (v, r) => {
-      if (v > 25 || v < 8) return { score: 55, level: 'critical' };
-      if (v > 22 || v < 10) return { score: 25, level: 'moderate' };
-      return { score: 0, level: 'stable' };
-    }
-  });
-
-  // SpO2
-  addMetric('SpO2', p.spo2, h.spo2, {
-    unit: '%',
-    decimals: 0,
-    refRange: '96 - 98%',
-    higherIsWorse: false,
-    critical: (v, r) => {
-      if (v < 85) return { score: 70, level: 'critical' };
-      if (v < 92) return { score: 40, level: 'moderate' };
-      return { score: 0, level: 'stable' };
-    }
-  });
-
-  // Chest expansion
-  addMetric('Expansi&oacute;n Tor&aacute;cica', p.chestExpand, h.chestExpand, {
-    unit: 'cm',
-    decimals: 1,
-    refRange: '5 - 7 cm',
-    higherIsWorse: false,
-    critical: (v, r) => {
-      if (r < 0.50) return { score: 50, level: 'critical' };
-      if (r < 0.71) return { score: 25, level: 'moderate' };
-      return { score: 0, level: 'stable' };
-    }
-  });
-
-  // Effort Index
-  addMetric('Índice de Esfuerzo', p.effortIndex, h.effortIndex, {
-    unit: '%',
-    decimals: 0,
-    refRange: '< 30%',
-    higherIsWorse: true,
-    critical: (v, r) => {
-      if (v > 80) return { score: 60, level: 'critical' };
-      if (v > 50) return { score: 30, level: 'moderate' };
-      return { score: 0, level: 'stable' };
-    }
-  });
-
-  // HRV
-  addMetric('HRV (SDNN)', p.hrv, h.hrv, {
-    unit: 'ms',
-    decimals: 0,
-    refRange: '> 50 ms',
-    higherIsWorse: false,
-    critical: (v, r) => {
-      if (r < 0.30) return { score: 55, level: 'critical' };
-      if (r < 0.60) return { score: 25, level: 'moderate' };
-      return { score: 0, level: 'stable' };
-    }
-  });
-
-  // FEV1
-  addMetric('FEV1 (% predicho)', p.fev1, h.fev1, {
-    unit: '%',
-    decimals: 0,
-    refRange: '> 80%',
-    higherIsWorse: false,
-    critical: (v, r) => {
-      if (r < 0.35) return { score: 65, level: 'critical' };
-      if (r < 0.60) return { score: 30, level: 'moderate' };
-      return { score: 0, level: 'stable' };
-    }
-  });
-
-  // Health Score (inverse: lower = more critical)
-  addMetric('Puntaje de Salud', p.healthScore !== undefined ? p.healthScore : h.healthScore, 100, {
-    unit: '/100',
-    decimals: 0,
-    refRange: '> 70',
-    higherIsWorse: false,
-    critical: (v, r) => {
-      if (v < 30) return { score: 65, level: 'critical' };
-      if (v < 55) return { score: 35, level: 'moderate' };
-      return { score: 0, level: 'stable' };
-    }
-  });
-
-  // Audio Spectrum (INMP)
   if (p.inmp !== undefined && p.inmp !== null) {
     criticalItems.push({
-      label: 'Espectro de Sonido',
-      patientVal: p.inmp.toFixed(1) + ' kHz',
-      refVal: 'Bajo',
-      refRange: '',
-      deviation: 'N/A',
-      absDev: 0,
-      score: p.inmp > 3.0 ? 50 : p.inmp > 1.5 ? 20 : 5,
+      label: 'Espectro de Sonido', patientVal: p.inmp.toFixed(1) + ' kHz', refVal: 'Bajo', refRange: '',
+      deviation: 'N/A', absDev: 0, score: p.inmp > 3.0 ? 50 : p.inmp > 1.5 ? 20 : 5,
       level: p.inmp > 3.0 ? 'critical' : p.inmp > 1.5 ? 'moderate' : 'stable',
-      color: p.inmp > 3.0 ? '#ef4444' : p.inmp > 1.5 ? '#eab308' : '#22c55e',
-      statusText: p.inmp > 3.0 ? 'Cr&iacute;tiga' : p.inmp > 1.5 ? 'Moderada' : 'Estable'
+      color: p.inmp > 3.0 ? '#e25555' : p.inmp > 1.5 ? '#e8943a' : '#4cb870',
+      statusText: p.inmp > 3.0 ? 'Cr&iacute;tica' : p.inmp > 1.5 ? 'Moderada' : 'Estable'
     });
   }
 
-  // Sort by score descending (most critical first)
   criticalItems.sort((a, b) => b.score - a.score);
-
-  // Assign ranks
-  criticalItems.forEach((item, idx) => {
-    item.rank = idx + 1;
-  });
-
+  criticalItems.forEach((item, idx) => { item.rank = idx + 1; });
   return criticalItems;
 }
 
@@ -1521,35 +1579,28 @@ function updateCritTable(data) {
   const modCount = items.filter(i => i.level === 'moderate').length;
   const stableCount = items.filter(i => i.level === 'stable').length;
 
-  // Update summary stats
   document.getElementById('critCount').textContent = critCount;
   document.getElementById('modCount').textContent = modCount;
   document.getElementById('stableCount').textContent = stableCount;
 
   const scoreEl = document.getElementById('totalScore');
   scoreEl.textContent = totalScore;
-  scoreEl.style.color = totalScore > 70 ? '#22c55e' : totalScore > 40 ? '#eab308' : '#ef4444';
+  scoreEl.style.color = totalScore > 70 ? '#4cb870' : totalScore > 40 ? '#e8943a' : '#e25555';
 
-  // Build table rows
   tbody.innerHTML = items.map(item => {
-    const rowClass = item.level;
-    const rankClass = item.level;
-    const barClass = item.level;
     const barW = Math.min(item.score, 100);
-    const devColor = item.level === 'critical' ? '#f87171' : item.level === 'moderate' ? '#eab308' : '#22c55e';
-
-    return '<tr class="' + rowClass + '">' +
-      '<td class="crit-rank"><span class="rank-badge ' + rankClass + '">' + item.rank + '</span></td>' +
-      '<td>' + item.label + '</td>' +
+    return '<tr class="' + item.level + '">' +
+      '<td><span class="rank-badge ' + item.level + '">' + item.rank + '</span></td>' +
+      '<td style="color:var(--text);">' + item.label + '</td>' +
       '<td>' +
         '<div class="crit-value-cell">' +
           '<span style="font-weight:600;color:' + item.color + ';">' + item.patientVal + '</span>' +
-          '<div class="crit-bar-bg"><div class="crit-bar-fill ' + barClass + '" style="width:' + barW + '%;"></div></div>' +
+          '<div class="crit-bar-bg"><div class="crit-bar-fill ' + item.level + '" style="width:' + barW + '%;"></div></div>' +
         '</div>' +
       '</td>' +
-      '<td style="color:#94a3b8;font-size:11px;">' + item.refRange + '</td>' +
-      '<td class="crit-dev" style="color:' + devColor + ';">' + item.deviation + '</td>' +
-      '<td><span class="crit-label ' + item.level + '">' + item.statusText + '</span></td>' +
+      '<td style="color:var(--text-dim);font-size:11px;">' + item.refRange + '</td>' +
+      '<td class="crit-dev" style="color:' + item.color + ';">' + item.deviation + '</td>' +
+      '<td><span class="crit-label ' + (item.level === 'critical' ? 'high' : item.level === 'moderate' ? 'medium' : 'low') + '">' + item.statusText + '</span></td>' +
       '</tr>';
   }).join('');
 }
