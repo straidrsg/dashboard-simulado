@@ -28,7 +28,8 @@
     --text: #1a3a52;
     --text-dim: #5a7a92;
     --text-light: #8aacc4;
-    --card-radius: 18px;
+    --card-radius: 6px;
+    --card-radius-alt: 2px 10px 2px 10px;
     --bubble-color: rgba(47,158,216,0.06);
   }
 
@@ -126,7 +127,7 @@
   .logo {
     width: 52px; height: 52px;
     background: linear-gradient(145deg, #5bc0f8 0%, #2f9ed8 50%, #1a6fa8 100%);
-    border-radius: 16px;
+    border-radius: 10px 4px 10px 4px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -148,7 +149,7 @@
     top: 0; left: 0; right: 0;
     height: 50%;
     background: linear-gradient(180deg, rgba(255,255,255,0.45) 0%, rgba(255,255,255,0.0) 100%);
-    border-radius: 16px 16px 0 0;
+    border-radius: 10px 4px 0 0;
   }
 
   .header h1 {
@@ -172,7 +173,7 @@
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     padding: 8px 16px;
-    border-radius: 24px;
+    border-radius: 6px 16px 6px 16px;
     font-size: 13px;
     border: 1px solid var(--glass-border);
     box-shadow: var(--glass-shadow);
@@ -217,7 +218,7 @@
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
     border: 1px solid var(--glass-border);
-    border-radius: var(--card-radius);
+    border-radius: var(--card-radius-alt);
     box-shadow: var(--glass-shadow);
     position: relative;
     overflow: hidden;
@@ -230,7 +231,31 @@
     height: 45%;
     background: var(--glass-gloss);
     pointer-events: none;
-    border-radius: var(--card-radius) var(--card-radius) 0 0;
+    border-radius: var(--card-radius-alt) var(--card-radius-alt) 0 0;
+  }
+
+  /* Tarjetas de salud: esquinas aún más irregulares */
+  .health-card {
+    border-radius: var(--card-radius);
+  }
+
+  /* Iconos con forma de cápsula asimétrica */
+  .sensor-card .icon {
+    border-radius: 4px 12px 4px 12px;
+  }
+
+  /* Logo con esquinas desiguales */
+  .logo {
+    border-radius: 10px 4px 10px 4px;
+  }
+
+  /* Badges con radio variable */
+  .gold-badge, .crit-label {
+    border-radius: 3px 9px 3px 9px;
+  }
+
+  .crit-table-wrap {
+    border-radius: var(--card-radius-alt);
   }
 
   /* =========================================================
@@ -249,8 +274,14 @@
     transition: transform 0.2s, box-shadow 0.2s;
   }
 
+  /* Variación asimétrica entre tarjetas de sensor */
+  .sensor-card:nth-child(1) { transform: rotate(-0.6deg) translateY(2px); }
+  .sensor-card:nth-child(2) { transform: rotate(0.5deg) translateY(0); }
+  .sensor-card:nth-child(3) { transform: rotate(-0.4deg) translateY(3px); }
+  .sensor-card:nth-child(4) { transform: rotate(0.7deg) translateY(1px); }
+  .sensor-card:hover { transform: rotate(0) translateY(-2px); }
+
   .sensor-card:hover {
-    transform: translateY(-2px);
     box-shadow: 0 12px 40px rgba(0,80,160,0.14), 0 4px 12px rgba(0,60,140,0.08);
   }
 
@@ -390,6 +421,14 @@
     text-align: center;
     transition: transform 0.2s;
   }
+
+  /* Variación asimétrica en tarjetas de salud */
+  .health-card:nth-child(1) { transform: translateY(0); border-radius: 2px 10px 2px 10px; }
+  .health-card:nth-child(2) { transform: translateY(4px); border-radius: 10px 2px 10px 2px; }
+  .health-card:nth-child(3) { transform: translateY(1px); border-radius: 4px 8px 4px 8px; }
+  .health-card:nth-child(4) { transform: translateY(5px); border-radius: 8px 4px 8px 4px; }
+  .health-card:nth-child(5) { transform: translateY(2px); border-radius: 2px 12px 2px 12px; }
+  .health-card:nth-child(6) { transform: translateY(3px); border-radius: 12px 2px 12px 2px; }
 
   .health-card:hover { transform: translateY(-2px); }
 
@@ -532,7 +571,7 @@
     border: 1px solid rgba(226,85,85,0.25);
     color: #a83232;
     padding: 12px 18px;
-    border-radius: 14px;
+    border-radius: 4px 12px 4px 12px;
     margin-bottom: 18px;
     font-size: 14px;
     display: none;
@@ -706,6 +745,12 @@
     text-align: center;
     padding: 16px;
   }
+
+  /* Variación en paneles resumen de criticidad */
+  .crit-stat:nth-child(1) { border-radius: 10px 3px 10px 3px; }
+  .crit-stat:nth-child(2) { transform: translateY(3px); border-radius: 3px 10px 3px 10px; }
+  .crit-stat:nth-child(3) { border-radius: 8px 2px 8px 2px; }
+  .crit-stat:nth-child(4) { transform: translateY(3px); border-radius: 2px 12px 2px 12px; }
 
   .crit-stat .stat-label {
     font-size: 10px;

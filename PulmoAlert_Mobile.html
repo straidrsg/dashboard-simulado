@@ -102,7 +102,7 @@
   .logo {
     width: 38px; height: 38px;
     background: linear-gradient(145deg, #5bc0f8 0%, #2f9ed8 50%, #1a6fa8 100%);
-    border-radius: 12px;
+    border-radius: 8px 3px 8px 3px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -168,7 +168,7 @@
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
     border: 1px solid var(--glass-border);
-    border-radius: 20px;
+    border-radius: 4px 10px 4px 10px;
     box-shadow: var(--glass-shadow);
     position: relative;
     overflow: hidden;
@@ -181,6 +181,12 @@
     background: var(--glass-gloss);
     pointer-events: none;
   }
+
+  /* Cada tarjeta vital con radio distinto */
+  #card-spo2 { border-radius: 10px 3px 10px 3px; }
+  #card-resp { border-radius: 3px 10px 3px 10px; }
+  #card-effort { border-radius: 8px 2px 8px 2px; }
+  #card-hrv { border-radius: 2px 12px 2px 12px; }
 
   /* ============================================
      HERO SCORE
@@ -244,7 +250,7 @@
 
   .score-status {
     font-size: 16px; font-weight: 600;
-    padding: 6px 18px; border-radius: 20px; display: inline-block;
+    padding: 6px 18px; border-radius: 5px 14px 5px 14px; display: inline-block;
   }
 
   .score-status.estable {
@@ -272,7 +278,7 @@
   .alert-banner {
     display: none;
     padding: 13px 16px;
-    border-radius: 14px;
+    border-radius: 4px 12px 4px 12px;
     margin-bottom: 16px;
     font-size: 13px;
     font-weight: 500;
@@ -321,6 +327,12 @@
   .vital-card {
     padding: 16px;
   }
+
+  /* Variación asimétrica sutil en tarjetas vitales */
+  #card-spo2 { transform: rotate(-0.7deg) translateY(2px); }
+  #card-resp { transform: rotate(0.6deg); }
+  #card-effort { transform: rotate(-0.5deg) translateY(3px); }
+  #card-hrv { transform: rotate(0.8deg) translateY(1px); }
 
   .vital-card::after {
     content: '';
@@ -521,7 +533,7 @@
     background: linear-gradient(135deg, rgba(226,85,85,0.12), rgba(226,85,85,0.05));
     border: 1px solid rgba(226,85,85,0.25);
     color: #a83232;
-    padding: 12px 16px; border-radius: 14px;
+    padding: 12px 16px; border-radius: 4px 12px 4px 12px;
     margin-bottom: 16px; font-size: 13px;
     display: none; align-items: center; gap: 8px;
   }
@@ -546,7 +558,7 @@
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
     border: 1px solid var(--glass-border);
-    border-radius: 20px;
+    border-radius: 5px 12px 5px 12px;
     box-shadow: var(--glass-shadow);
     overflow: hidden;
     position: relative;
