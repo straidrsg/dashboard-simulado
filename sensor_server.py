@@ -93,6 +93,10 @@ class SensorDataGenerator:
         self.severity = 0.2  # 0 = estable, 1 = exacerbacion severa
         self.gold_stage = 1
         self.current_label = "GOLD 1 - Leve"
+        self.manual_enabled = False
+        self.manual_overrides = {}
+        self.manual_severity = None
+        self.manual_gold = None
 
     def _gauss(self, mean, std):
         return mean + std * (random.random() + random.random() +
@@ -350,8 +354,63 @@ class SensorDataGenerator:
 
         return {"pulmo": pulmo_data, "healthy": healthy_data}
 
+    def get_control_state(self):
+        return {
+            "enabled": self.manual_enabled,
+            "overrides": dict(self.manual_overrides),
+            "severity": self.manual_severity,
+            "goldStage": self.manual_gold,
+        }
+
+    def set_control(self, payload):
+        if "enabled" in payload:
+            self.manual_enabled = bool(payload["enabled"])
+        if "severity" in payload:
+            v = payload["severity"]
+            self.manual_severity = None if v is None else self._clamp(float(v), 0, 1)
+        if "goldStage" in payload:
+            v = payload["goldStage"]
+            self.manual_gold = None if v is None else int(v)
+        if "overrides" in payload and isinstance(payload["overrides"], dict):
+            cleaned = {}
+            for k, v in payload["overrides"].items():
+                if v is None:
+                    continue
+                try:
+                    cleaned[k] = float(v)
+                except:
+                    cleaned[k] = v
+            self.manual_overrides = cleaned
+        if payload.get("reset"):
+            self.manual_enabled = False
+            self.manual_overrides = {}
+            self.manual_severity = None
+            self.manual_gold = None
+        return self.get_control_state()
+
     def get_data(self):
         self.update()
+        if self.manual_enabled:
+            if self.manual_severity is not None:
+                self.severity = self._clamp(float(self.manual_severity), 0, 1)
+            if self.manual_gold is not None:
+                self.gold_stage = int(self.manual_gold)
+                labels = {1: "GOLD 1 - Leve", 2: "GOLD 2 - Moderado", 3: "GOLD 3 - Grave", 4: "GOLD 4 - Muy Grave"}
+                self.current_label = labels.get(self.gold_stage, self.current_label)
+            for k, v in self.manual_overrides.items():
+                if k in self.patient:
+                    self.patient[k] = float(v)
+            if "healthScore" not in self.manual_overrides:
+                s_tmp = self.patient
+                score = 100.0
+                score -= s_tmp.get("effortIndex", 0) * 0.20
+                score -= max(0, s_tmp.get("respRate", 16) - 15) * 1.2
+                score -= max(0, 5.0 - s_tmp.get("chestExpand", 6)) * 3.0
+                score -= max(0, 93 - s_tmp.get("spo2", 97)) * 2.0
+                score -= max(0, 40 - s_tmp.get("hrv", 52)) * 0.2
+                score -= s_tmp.get("inmp", 0) * 2.0
+                score -= max(0, s_tmp.get("gsr", 1.8) - 3.0) * 1.5
+                self.patient["healthScore"] = self._clamp(score, 15, 100)
         s = {k: (round(v, 2) if isinstance(v, float) else v)
              for k, v in self.patient.items()}
         h = {k: (round(v, 2) if isinstance(v, float) else v)
@@ -449,6 +508,7 @@ PORT = int(sys.argv[2]) if len(sys.argv) > 2 and sys.argv[1] == "--port" else 50
 BASE_DIR = os.path.dirname(os.path.abspath(__file__)) or "."
 HTML_FILE = os.path.join(BASE_DIR, "PulmoAlert_Dashboard.html")
 HTML_MOBILE = os.path.join(BASE_DIR, "PulmoAlert_Mobile.html")
+HTML_CONTROL = os.path.join(BASE_DIR, "PulmoAlert_Control.html")
 
 
 class SensorAPIHandler(http.server.SimpleHTTPRequestHandler):
@@ -474,10 +534,19 @@ class SensorAPIHandler(http.server.SimpleHTTPRequestHandler):
                 "last_rx": real_bridge.last_rx_time,
                 "esp32_ip": real_bridge.esp32_ip,
             })
+        elif path == "/api/control":
+            self._send_json({
+                "control": generator.get_control_state(),
+                "current": generator.patient,
+                "goldStage": generator.gold_stage,
+                "severity": generator.severity,
+            })
         elif path == "/":
             self._serve_file(HTML_FILE, "text/html; charset=utf-8")
         elif path == "/mobile":
             self._serve_file(HTML_MOBILE, "text/html; charset=utf-8")
+        elif path == "/control":
+            self._serve_file(HTML_CONTROL, "text/html; charset=utf-8")
         else:
             super().do_GET()
 
@@ -501,14 +570,33 @@ class SensorAPIHandler(http.server.SimpleHTTPRequestHandler):
                     self._send_json({"status": "error", "msg": "empty body"})
             except Exception as e:
                 self._send_json({"status": "error", "msg": str(e)})
+        elif path == "/api/control":
+            try:
+                length = int(self.headers.get("Content-Length", 0))
+                body = self.rfile.read(length) if length > 0 else b"{}"
+                payload = json.loads(body.decode("utf-8")) if body else {}
+                result = generator.set_control(payload)
+                self._send_json({"status": "ok", "control": result})
+            except Exception as e:
+                self._send_json({"status": "error", "msg": str(e)})
         else:
             self.send_error(404, "Endpoint no encontrado")
+
+    def do_OPTIONS(self):
+        self.send_response(204)
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        self.send_header("Content-Length", "0")
+        self.end_headers()
 
     def _send_json(self, data):
         body = json.dumps(data, ensure_ascii=False).encode("utf-8")
         self.send_response(200)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type")
         self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()

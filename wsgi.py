@@ -1,7 +1,7 @@
 import json
 import os
 from urllib.parse import urlparse
-from sensor_server import generator, real_bridge, HEALTHY, HTML_FILE, HTML_MOBILE
+from sensor_server import generator, real_bridge, HEALTHY, HTML_FILE, HTML_MOBILE, HTML_CONTROL
 
 def application(environ, start_response):
     method = environ.get("REQUEST_METHOD", "GET")
@@ -54,6 +54,24 @@ def application(environ, start_response):
             "esp32_ip": real_bridge.esp32_ip,
         }))
 
+    if method == "GET" and path == "/api/control":
+        return respond("200 OK", "application/json; charset=utf-8", json.dumps({
+            "control": generator.get_control_state(),
+            "current": generator.patient,
+            "goldStage": generator.gold_stage,
+            "severity": generator.severity,
+        }))
+
+    if method == "POST" and path == "/api/control":
+        try:
+            length = int(environ.get("CONTENT_LENGTH") or 0)
+            body = environ["wsgi.input"].read(length) if length > 0 else b"{}"
+            payload = json.loads(body.decode("utf-8")) if body else {}
+            result = generator.set_control(payload)
+            return respond("200 OK", "application/json; charset=utf-8", json.dumps({"status": "ok", "control": result}))
+        except Exception as e:
+            return respond("200 OK", "application/json; charset=utf-8", json.dumps({"status": "error", "msg": str(e)}))
+
     if method == "POST" and path == "/api/esp32":
         try:
             length = int(environ.get("CONTENT_LENGTH") or 0)
@@ -84,6 +102,9 @@ def application(environ, start_response):
 
     if method == "GET" and path == "/mobile":
         return serve_file(HTML_MOBILE)
+
+    if method == "GET" and path == "/control":
+        return serve_file(HTML_CONTROL)
 
     start_response("404 Not Found", [("Content-Type", "text/plain")])
     return [b"Not found"]

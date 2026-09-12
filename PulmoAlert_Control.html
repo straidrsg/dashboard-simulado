@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PulmoAlert - Panel de Control</title>
+<style>
+:root {
+  --sky-top: #eaf5fd; --sky-mid: #d7edfb; --sky-bot: #bde3f9;
+  --glass-bg: rgba(255,255,255,0.72); --glass-border: rgba(255,255,255,0.9);
+  --glass-shadow: 0 6px 24px rgba(0,80,160,0.12), 0 2px 6px rgba(0,60,140,0.05);
+  --glass-gloss: linear-gradient(180deg, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0) 45%);
+  --aero-blue: #2f9ed8; --aero-blue-dark: #1a6fa8; --aero-green: #4cb870; --aero-red: #e25555; --aero-orange:#e8943a;
+  --text:#1a3a52; --text-dim:#5a7a92;
+}
+* { margin:0; padding:0; box-sizing:border-box; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif; }
+body {
+  min-height:100vh; color:var(--text);
+  background: linear-gradient(180deg, var(--sky-top) 0%, var(--sky-mid) 45%, var(--sky-bot) 100%);
+  background-attachment:fixed; position:relative; overflow-x:hidden;
+}
+body::before {
+  content:''; position:fixed; inset:0; pointer-events:none; opacity:0.35;
+  background:
+    radial-gradient(ellipse 900px 500px at 15% 10%, rgba(255,255,255,0.9) 0%, transparent 65%),
+    radial-gradient(ellipse 700px 400px at 85% 5%, rgba(180,220,255,0.5) 0%, transparent 60%),
+    radial-gradient(ellipse 800px 400px at 50% 95%, rgba(90,180,240,0.15) 0%, transparent 70%);
+}
+.bubble { position:fixed; border-radius:50%; pointer-events:none; opacity:0.18; }
+.bubble::after { content:''; position:absolute; top:12%; left:18%; width:32%; height:32%; background:radial-gradient(circle, rgba(255,255,255,0.9), transparent 70%); border-radius:50%; }
+.header {
+  position:sticky; top:0; z-index:100; backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px);
+  background:rgba(255,255,255,0.78); border-bottom:1px solid rgba(255,255,255,0.9);
+  box-shadow:0 2px 16px rgba(0,80,160,0.08); padding:12px 20px; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
+}
+.header-left { display:flex; align-items:center; gap:10px; }
+.logo { width:38px; height:38px; background:linear-gradient(145deg,#5bc0f8 0%,#2f9ed8 50%,#1a6fa8 100%); border-radius:8px 3px 8px 3px; display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:800; color:#fff; box-shadow:0 4px 12px rgba(47,158,216,0.35), inset 0 1px 0 rgba(255,255,255,0.5); border:1px solid rgba(255,255,255,0.4); position:relative; overflow:hidden; }
+.logo::after { content:''; position:absolute; top:0; left:0; right:0; height:50%; background:linear-gradient(180deg,rgba(255,255,255,0.45),transparent); }
+.header h1 { font-size:16px; font-weight:700; color:var(--aero-blue-dark); }
+.header p { font-size:11px; color:var(--text-dim); }
+.nav-links { display:flex; gap:8px; }
+.nav-links a { padding:6px 12px; border-radius:6px 10px 6px 10px; font-size:12px; font-weight:600; text-decoration:none; border:1px solid rgba(47,158,216,0.15); background:rgba(255,255,255,0.6); color:var(--aero-blue-dark); }
+.nav-links a.active { background:var(--aero-blue); color:#fff; border-color:var(--aero-blue); }
+.container { max-width:1100px; margin:0 auto; padding:18px 14px 40px; position:relative; }
+.glass { background:var(--glass-bg); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); border:1px solid var(--glass-border); border-radius:4px 10px 4px 10px; box-shadow:var(--glass-shadow); position:relative; overflow:hidden; }
+.glass::before { content:''; position:absolute; top:0; left:0; right:0; height:45%; background:var(--glass-gloss); pointer-events:none; }
+.control-bar { display:flex; align-items:center; justify-content:space-between; gap:14px; padding:16px 18px; margin-bottom:14px; flex-wrap:wrap; }
+.toggle-row { display:flex; align-items:center; gap:12px; }
+.switch { width:52px; height:30px; background:rgba(0,0,0,0.12); border-radius:30px; position:relative; cursor:pointer; transition:0.25s; border:1px solid rgba(255,255,255,0.6); flex-shrink:0; }
+.switch.on { background:linear-gradient(135deg,#4cb870,#2e9a52); box-shadow:0 2px 8px rgba(76,184,112,0.4); }
+.switch::after { content:''; position:absolute; top:2px; left:2px; width:24px; height:24px; background:#fff; border-radius:50%; box-shadow:0 2px 6px rgba(0,0,0,0.15); transition:0.25s; }
+.switch.on::after { transform:translateX(22px); }
+.mode-label { font-size:13px; font-weight:700; }
+.mode-desc { font-size:11px; color:var(--text-dim); }
+.presets { display:flex; gap:6px; flex-wrap:wrap; }
+.preset-btn { padding:6px 10px; border-radius:6px 10px 6px 10px; font-size:11px; font-weight:700; border:1px solid rgba(47,158,216,0.18); background:rgba(255,255,255,0.7); color:var(--aero-blue-dark); cursor:pointer; }
+.preset-btn:hover { background:#fff; }
+.preset-btn.crit { border-color:rgba(226,85,85,0.3); color:#a83232; background:rgba(226,85,85,0.08); }
+.top-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px; }
+@media (max-width:640px){ .top-grid{ grid-template-columns:1fr; } }
+.top-card { padding:14px 16px; }
+.top-card h3 { font-size:11px; text-transform:uppercase; letter-spacing:0.8px; color:var(--text-dim); margin-bottom:10px; position:relative; }
+.slider-row { display:flex; align-items:center; gap:10px; margin-bottom:6px; }
+.slider-row label { font-size:11px; font-weight:600; min-width:70px; }
+.slider-row .val { font-size:12px; font-weight:700; min-width:52px; text-align:right; color:var(--aero-blue-dark); }
+.slider-row .unit { font-size:10px; color:var(--text-dim); min-width:28px; }
+input[type=range] { flex:1; accent-color:var(--aero-blue); height:4px; }
+select.ctrl-select { flex:1; padding:6px 8px; border-radius:6px; border:1px solid rgba(0,80,160,0.12); background:rgba(255,255,255,0.8); font-size:12px; font-weight:600; color:var(--text); }
+.groups { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; }
+@media (max-width:900px){ .groups{ grid-template-columns:1fr 1fr; } }
+@media (max-width:580px){ .groups{ grid-template-columns:1fr; } }
+.group { padding:14px 14px 10px; }
+.group h3 { font-size:11px; text-transform:uppercase; letter-spacing:0.8px; color:var(--aero-blue-dark); margin-bottom:12px; display:flex; align-items:center; gap:6px; position:relative; }
+.group h3 span.icon { width:22px; height:22px; border-radius:6px; display:inline-flex; align-items:center; justify-content:center; font-size:11px; background:linear-gradient(135deg,rgba(47,158,216,0.12),rgba(47,158,216,0.05)); border:1px solid rgba(47,158,216,0.1); }
+.ctrl { margin-bottom:13px; }
+.ctrl-head { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:4px; }
+.ctrl-head label { font-size:11px; font-weight:700; color:var(--text); }
+.ctrl-head .cur { font-size:11px; font-weight:800; color:var(--aero-blue-dark); }
+.ctrl-head .healthy { font-size:9px; color:var(--text-dim); }
+.ctrl input[type=range] { width:100%; }
+.ctrl .range-labels { display:flex; justify-content:space-between; font-size:9px; color:var(--text-dim); margin-top:2px; }
+.actions { display:flex; gap:8px; margin-top:14px; flex-wrap:wrap; }
+.btn { padding:8px 14px; border-radius:6px 10px 6px 10px; font-size:12px; font-weight:700; border:1px solid transparent; cursor:pointer; }
+.btn-primary { background:linear-gradient(135deg,#2f9ed8,#1a6fa8); color:#fff; box-shadow:0 3px 10px rgba(47,158,216,0.3); }
+.btn-ghost { background:rgba(255,255,255,0.7); border-color:rgba(47,158,216,0.15); color:var(--aero-blue-dark); }
+.btn-danger { background:rgba(226,85,85,0.1); border-color:rgba(226,85,85,0.25); color:#a83232; }
+.status { font-size:11px; color:var(--text-dim); margin-top:8px; min-height:14px; }
+.disabled { opacity:0.45; pointer-events:none; }
+.live-dot { width:8px; height:8px; border-radius:50%; background:var(--aero-green); display:inline-block; box-shadow:0 0 6px rgba(76,184,112,0.6); animation:pulse 1.8s infinite; }
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.6}}
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="header-left">
+    <div class="logo">P</div>
+    <div>
+      <h1>Panel de Control — Simulación</h1>
+      <p>Controla cada variable para testear PulmoAlert</p>
+    </div>
+  </div>
+  <div class="nav-links">
+    <a href="/">Dashboard</a>
+    <a href="/mobile">Móvil</a>
+    <a href="/control" class="active">Control</a>
+  </div>
+</div>
+
+<div class="container">
+  <div class="glass control-bar">
+    <div class="toggle-row">
+      <div id="enableSwitch" class="switch" onclick="toggleEnable()"></div>
+      <div>
+        <div class="mode-label" id="modeLabel">Modo: Automático</div>
+        <div class="mode-desc" id="modeDesc">La simulación evoluciona sola. Activa manual para tomar control.</div>
+      </div>
+    </div>
+    <div class="presets">
+      <button class="preset-btn" onclick="applyPreset('healthy')">Sano</button>
+      <button class="preset-btn" onclick="applyPreset('gold1')">GOLD 1</button>
+      <button class="preset-btn" onclick="applyPreset('gold2')">GOLD 2</button>
+      <button class="preset-btn" onclick="applyPreset('gold3')">GOLD 3</button>
+      <button class="preset-btn crit" onclick="applyPreset('critical')">Crítico</button>
+      <button class="preset-btn crit" onclick="applyPreset('crisis')">Crisis</button>
+    </div>
+  </div>
+
+  <div class="top-grid">
+    <div class="glass top-card">
+      <h3>Severidad global</h3>
+      <div class="slider-row">
+        <label>Severidad</label>
+        <input type="range" id="sev" min="0" max="100" value="20" oninput="onSeverity(this.value)">
+        <span class="val" id="sevVal">20%</span>
+      </div>
+      <div style="font-size:10px;color:var(--text-dim);">0% estable → 100% exacerbación grave. Sobrescribe la evolución automática.</div>
+      <div class="slider-row" style="margin-top:10px;">
+        <label>GOLD</label>
+        <select id="goldSel" class="ctrl-select" onchange="onGold(this.value)">
+          <option value="">Auto (según severidad)</option>
+          <option value="1">GOLD 1 — Leve</option>
+          <option value="2">GOLD 2 — Moderado</option>
+          <option value="3">GOLD 3 — Grave</option>
+          <option value="4">GOLD 4 — Muy grave</option>
+        </select>
+      </div>
+    </div>
+    <div class="glass top-card">
+      <h3>Acciones</h3>
+      <div class="actions">
+        <button class="btn btn-primary" onclick="pushAll()">Aplicar todo</button>
+        <button class="btn btn-ghost" onclick="resetControl()">Reset / Automático</button>
+        <button class="btn btn-danger" onclick="randomize()">Aleatorizar</button>
+      </div>
+      <div class="status" id="status"><span class="live-dot"></span> Conectado — polling /api/control</div>
+      <div style="font-size:10px;color:var(--text-dim);margin-top:6px;">Tip: abre <a href="/" target="_blank">Dashboard</a> y <a href="/mobile" target="_blank">Móvil</a> en otra pestaña para ver el efecto en tiempo real.</div>
+    </div>
+  </div>
+
+  <div class="groups" id="groups"></div>
+</div>
+
+<script>
+const VARS = [
+  { key:'spo2', label:'SpO₂', unit:'%', min:75, max:99, step:1, healthy:97, group:'Vitales' },
+  { key:'respRate', label:'Frec. Resp.', unit:'rpm', min:10, max:40, step:1, healthy:16, group:'Vitales' },
+  { key:'hrv', label:'HRV (SDNN)', unit:'ms', min:8, max:65, step:1, healthy:52, group:'Vitales' },
+  { key:'fev1', label:'FEV₁', unit:'% pred', min:18, max:98, step:1, healthy:95, group:'Respiratorio' },
+  { key:'fev1Fvc', label:'FEV₁/FVC', unit:'', min:0.28, max:0.84, step:0.01, healthy:0.82, group:'Respiratorio' },
+  { key:'chestExpand', label:'Exp. torácica', unit:'cm', min:1, max:7.5, step:0.1, healthy:6.2, group:'Respiratorio' },
+  { key:'hcsr', label:'HC-SR04', unit:'cm', min:1, max:8, step:0.1, healthy:6.5, group:'Respiratorio' },
+  { key:'effortIndex', label:'Índice esfuerzo', unit:'%', min:10, max:100, step:1, healthy:18, group:'Respiratorio' },
+  { key:'mpu', label:'MPU-6050', unit:'g', min:0.15, max:1.8, step:0.05, healthy:1.35, group:'Respiratorio' },
+  { key:'gsr', label:'GSR', unit:'µS', min:0.5, max:8, step:0.1, healthy:1.8, group:'Sensores' },
+  { key:'inmp', label:'INMP441', unit:'kHz', min:0.1, max:6.5, step:0.1, healthy:0.5, group:'Sensores' },
+];
+
+const GROUPS = ['Vitales','Respiratorio','Sensores'];
+let enabled = false;
+let overrides = {};
+let severity = 0.2;
+let goldStage = null;
+let dragging = null;
+
+function buildUI(){
+  const container = document.getElementById('groups');
+  GROUPS.forEach(g=>{
+    const groupVars = VARS.filter(v=>v.group===g);
+    const icon = g==='Vitales'?'♥':g==='Respiratorio'?'◉':'☾';
+    let html = `<div class="glass group"><h3><span class="icon">${icon}</span> ${g}</h3>`;
+    groupVars.forEach(v=>{
+      html += `<div class="ctrl" data-key="${v.key}">
+        <div class="ctrl-head"><label>${v.label}</label><span><span class="cur" id="cur-${v.key}">—</span> <span class="healthy">· sano ${v.healthy}${v.unit}</span></span></div>
+        <input type="range" id="sl-${v.key}" min="${v.min}" max="${v.max}" step="${v.step}" value="${v.healthy}"
+          oninput="onSlider('${v.key}', this.value)" onmousedown="dragging='${v.key}'" onmouseup="dragging=null" ontouchstart="dragging='${v.key}'" ontouchend="dragging=null">
+        <div class="range-labels"><span>${v.min}</span><span>${v.max}${v.unit}</span></div>
+      </div>`;
+    });
+    html += `</div>`;
+    container.insertAdjacentHTML('beforeend', html);
+  });
+}
+
+function updateEnabledUI(){
+  document.getElementById('enableSwitch').className = 'switch' + (enabled?' on':'');
+  document.getElementById('modeLabel').textContent = enabled ? 'Modo: Manual' : 'Modo: Automático';
+  document.getElementById('modeDesc').textContent = enabled ? 'Mueves los sliders y se envían a /api/control' : 'La simulación evoluciona sola. Activa manual para tomar control.';
+  document.getElementById('groups').classList.toggle('disabled', !enabled);
+  document.getElementById('sev').disabled = !enabled;
+  document.getElementById('goldSel').disabled = !enabled;
+}
+
+async function fetchControl(){
+  try{
+    const r = await fetch('/api/control'); const j = await r.json();
+    const ctrl = j.control || j;
+    enabled = !!ctrl.enabled;
+    overrides = ctrl.overrides || {};
+    severity = ctrl.severity;
+    goldStage = ctrl.goldStage;
+    updateEnabledUI();
+    if (severity !== null && severity !== undefined) {
+      document.getElementById('sev').value = Math.round(severity*100);
+      document.getElementById('sevVal').textContent = Math.round(severity*100)+'%';
+    }
+    document.getElementById('goldSel').value = goldStage ? String(goldStage) : '';
+    VARS.forEach(v=>{
+      const cur = j.current ? j.current[v.key] : undefined;
+      const display = (enabled && overrides[v.key] !== undefined) ? overrides[v.key] : cur;
+      const elCur = document.getElementById('cur-'+v.key);
+      if (elCur && display !== undefined) elCur.textContent = (Math.round(display*100)/100) + v.unit;
+      const sl = document.getElementById('sl-'+v.key);
+      if (sl && dragging !== v.key) {
+        const val = (enabled && overrides[v.key] !== undefined) ? overrides[v.key] : (cur !== undefined ? cur : v.healthy);
+        sl.value = val;
+      }
+    });
+    document.getElementById('status').innerHTML = `<span class="live-dot"></span> ${enabled?'Manual activo':'Automático'} — GOLD ${j.goldStage||'?'} · sev ${(j.severity||0).toFixed(2)}`;
+  } catch(e){
+    document.getElementById('status').textContent = 'Error: '+e.message;
+  }
+}
+
+let debounceTimer=null;
+function schedulePush(){
+  if (!enabled) return;
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(pushAll, 180);
+}
+
+function onSlider(key, val){
+  overrides[key]=parseFloat(val);
+  document.getElementById('cur-'+key).textContent = val + VARS.find(v=>v.key===key).unit;
+  schedulePush();
+}
+function onSeverity(val){
+  document.getElementById('sevVal').textContent = val+'%';
+  severity = parseInt(val)/100;
+  schedulePush();
+}
+function onGold(val){
+  goldStage = val ? parseInt(val) : null;
+  schedulePush();
+}
+async function toggleEnable(){
+  enabled = !enabled;
+  updateEnabledUI();
+  await pushAll();
+}
+async function pushAll(){
+  const payload = { enabled, overrides: enabled?overrides:{}, severity: enabled?(severity):null, goldStage: enabled?goldStage:null };
+  try{
+    const r = await fetch('/api/control', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)});
+    const j = await r.json();
+    document.getElementById('status').textContent = j.status==='ok' ? '✓ actualizado' : 'Error: '+(j.msg||'');
+    setTimeout(fetchControl, 400);
+  } catch(e){ document.getElementById('status').textContent='Error: '+e.message; }
+}
+async function resetControl(){
+  await fetch('/api/control', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({reset:true})});
+  overrides={}; severity=0.2; goldStage=null;
+  fetchControl();
+}
+function applyPreset(name){
+  const presets = {
+    healthy: { spo2:97, respRate:16, hrv:52, fev1:95, fev1Fvc:0.82, chestExpand:6.2, hcsr:6.5, effortIndex:18, mpu:1.35, gsr:1.8, inmp:0.5, severity:0.05, gold:1 },
+    gold1: { spo2:95, respRate:19, hrv:42, fev1:85, fev1Fvc:0.68, chestExpand:5, hcsr:5.2, effortIndex:35, mpu:1.10, gsr:2.5, inmp:1.0, severity:0.2, gold:1 },
+    gold2: { spo2:93, respRate:22, hrv:34, fev1:62, fev1Fvc:0.58, chestExpand:3.8, hcsr:4.2, effortIndex:58, mpu:0.85, gsr:3.4, inmp:1.8, severity:0.4, gold:2 },
+    gold3: { spo2:88, respRate:28, hrv:22, fev1:38, fev1Fvc:0.42, chestExpand:2.5, hcsr:3.0, effortIndex:82, mpu:0.55, gsr:5.0, inmp:3.5, severity:0.7, gold:3 },
+    critical: { spo2:82, respRate:34, hrv:14, fev1:22, fev1Fvc:0.32, chestExpand:1.5, hcsr:1.8, effortIndex:95, mpu:0.30, gsr:6.8, inmp:5.2, severity:0.9, gold:4 },
+    crisis: { spo2:76, respRate:38, hrv:10, fev1:18, fev1Fvc:0.28, chestExpand:1.0, hcsr:1.2, effortIndex:99, mpu:0.18, gsr:7.5, inmp:6.0, severity:1.0, gold:4 },
+  };
+  const p = presets[name]; if(!p) return;
+  enabled=true; severity=p.severity; goldStage=p.gold; delete p.severity; delete p.gold;
+  overrides = {...p};
+  updateEnabledUI();
+  document.getElementById('sev').value=Math.round(severity*100);
+  document.getElementById('sevVal').textContent=Math.round(severity*100)+'%';
+  document.getElementById('goldSel').value=String(goldStage);
+  VARS.forEach(v=>{ if(overrides[v.key]!==undefined) document.getElementById('sl-'+v.key).value=overrides[v.key]; });
+  pushAll();
+}
+function randomize(){
+  enabled=true; updateEnabledUI();
+  VARS.forEach(v=>{
+    const rnd = (Math.random()*(v.max-v.min)+v.min);
+    const stepped = v.step>=1 ? Math.round(rnd) : Math.round(rnd*10)/10;
+    if(v.key==='fev1Fvc') overrides[v.key]=Math.round(rnd*100)/100; else overrides[v.key]=stepped;
+  });
+  severity = Math.random();
+  document.getElementById('sev').value=Math.round(severity*100);
+  document.getElementById('sevVal').textContent=Math.round(severity*100)+'%';
+  pushAll();
+}
+
+function createBubbles(){
+  const cols=['rgba(255,255,255,0.9)','rgba(180,220,255,0.5)','rgba(90,180,240,0.25)'];
+  for(let i=0;i<6;i++){
+    const b=document.createElement('div'); b.className='bubble';
+    const s=30+Math.random()*70; b.style.width=s+'px'; b.style.height=s+'px';
+    b.style.left=Math.random()*90+'%'; b.style.top=Math.random()*70+'%';
+    b.style.background=`radial-gradient(circle at 30% 30%, ${cols[i%3]}, transparent 70%)`;
+    b.style.filter='blur('+(s>60?1:0)+'px)';
+    document.body.appendChild(b);
+  }
+}
+
+buildUI(); createBubbles(); fetchControl(); setInterval(fetchControl, 1200);
+</script>
+</body>
+</html>
