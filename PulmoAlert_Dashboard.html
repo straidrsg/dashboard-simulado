@@ -796,13 +796,13 @@
      CONTROL DRAWER - hover para desplegar
      ========================================================= */
   .control-drawer {
-    position: fixed; top: 0; right: 0; z-index: 300;
+    position: fixed; top: 0; right: 0; z-index: 9999;
     width: 380px; max-width: 88vw; height: 100vh; height: 100dvh;
-    display: flex; transform: translateX(calc(100% - 42px));
+    display: flex; transform: translateX(338px);
     transition: transform 0.34s cubic-bezier(0.22,0.8,0.22,1);
-    filter: drop-shadow(-8px 0 20px rgba(0,80,160,0.15));
+    box-shadow: -8px 0 28px rgba(0,80,160,0.18);
   }
-  .control-drawer:hover, .control-drawer.open { transform: translateX(0); }
+  .control-drawer:hover, .control-drawer.open, .control-drawer.pinned { transform: translateX(0); }
   .control-drawer-handle {
     width: 42px; flex-shrink: 0; cursor: pointer;
     background: linear-gradient(180deg, #5bc0f8 0%, #2f9ed8 55%, #1a6fa8 100%);
@@ -866,7 +866,7 @@
     </div>
     <div class="status-badge">
       <a href="/mobile" style="color:var(--aero-blue);text-decoration:none;font-size:12px;font-weight:600;margin-right:6px;border-right:1px solid rgba(47,158,216,0.2);padding-right:10px;">&#128241; M&oacute;vil</a>
-      <a href="/control" style="color:var(--aero-blue);text-decoration:none;font-size:12px;font-weight:600;margin-right:10px;border-right:1px solid rgba(47,158,216,0.2);padding-right:10px;">&#127899; Control</a>
+      <a href="#" onclick="toggleDrawer();return false;" style="color:var(--aero-blue);text-decoration:none;font-size:12px;font-weight:600;margin-right:10px;border-right:1px solid rgba(47,158,216,0.2);padding-right:10px;">&#127899; Control</a>
       <span class="status-dot"></span>
       <span id="serverLabel">Conectando...</span>
       <span id="goldStageBadge" class="gold-badge"></span>
@@ -1805,7 +1805,19 @@ function drawerPreset(name){
   const p={healthy:{spo2:97,respRate:16,hrv:52,fev1:95,fev1Fvc:0.82,chestExpand:6.2,hcsr:6.5,effortIndex:18,mpu:1.35,gsr:1.8,inmp:0.5,severity:0.05,gold:1},gold1:{spo2:95,respRate:19,hrv:42,fev1:85,fev1Fvc:0.68,chestExpand:5,hcsr:5.2,effortIndex:35,mpu:1.10,gsr:2.5,inmp:1.0,severity:0.2,gold:1},gold2:{spo2:93,respRate:22,hrv:34,fev1:62,fev1Fvc:0.58,chestExpand:3.8,hcsr:4.2,effortIndex:58,mpu:0.85,gsr:3.4,inmp:1.8,severity:0.4,gold:2},gold3:{spo2:88,respRate:28,hrv:22,fev1:38,fev1Fvc:0.42,chestExpand:2.5,hcsr:3.0,effortIndex:82,mpu:0.55,gsr:5.0,inmp:3.5,severity:0.7,gold:3},critical:{spo2:82,respRate:34,hrv:14,fev1:22,fev1Fvc:0.32,chestExpand:1.5,hcsr:1.8,effortIndex:95,mpu:0.30,gsr:6.8,inmp:5.2,severity:0.9,gold:4}}[name];
   if(!p) return; drawerEnabled=true; drawerSev=p.severity; drawerGold=p.gold; delete p.severity; delete p.gold; drawerOverrides={...p}; updateDrawerEnabledUI(); document.getElementById('drawerSev').value=Math.round(drawerSev*100); document.getElementById('drawerSevVal').textContent=Math.round(drawerSev*100)+'%'; document.getElementById('drawerGold').value=String(drawerGold); pushDrawer();
 }
-function toggleDrawer(){ document.getElementById('controlDrawer').classList.toggle('open'); }
+function toggleDrawer(){
+  const d=document.getElementById('controlDrawer');
+  d.classList.toggle('open');
+  d.classList.toggle('pinned');
+}
+(function(){
+  const d=document.getElementById('controlDrawer');
+  const h=document.getElementById('controlDrawerHandle');
+  if(h && d){
+    h.addEventListener('mouseenter', ()=>{ if(!d.classList.contains('pinned')) d.classList.add('open'); });
+    d.addEventListener('mouseleave', ()=>{ if(!d.classList.contains('pinned')) d.classList.remove('open'); });
+  }
+})();
 
 // ============================================================
 // BOOT

@@ -575,8 +575,8 @@
     .score-value .number { font-size: 32px; }
   }
 
-  .control-drawer { position: fixed; top: 0; right: 0; z-index: 300; width: 360px; max-width: 86vw; height: 100dvh; display: flex; transform: translateX(calc(100% - 38px)); transition: transform 0.33s cubic-bezier(0.22,0.8,0.22,1); filter: drop-shadow(-6px 0 16px rgba(0,80,160,0.15)); }
-  .control-drawer.open, .control-drawer:hover { transform: translateX(0); }
+  .control-drawer { position: fixed; top: 0; right: 0; z-index: 9999; width: 360px; max-width: 86vw; height: 100dvh; display: flex; transform: translateX(322px); transition: transform 0.33s cubic-bezier(0.22,0.8,0.22,1); box-shadow: -6px 0 20px rgba(0,80,160,0.18); }
+  .control-drawer.open, .control-drawer:hover, .control-drawer.pinned { transform: translateX(0); }
   .control-drawer-handle { width: 38px; flex-shrink: 0; cursor: pointer; background: linear-gradient(180deg,#5bc0f8 0%,#2f9ed8 55%,#1a6fa8 100%); color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; writing-mode: vertical-rl; text-orientation: mixed; font-size: 11px; font-weight: 800; letter-spacing: 1px; border-right: 1px solid rgba(255,255,255,0.2); }
   .control-drawer-handle span.hint { font-size: 8px; opacity: 0.85; }
   .control-drawer-panel { flex: 1; background: rgba(255,255,255,0.88); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); overflow-y: auto; padding: 12px 10px 16px; border-left: 1px solid rgba(255,255,255,0.9); }
@@ -623,7 +623,7 @@
   </div>
   <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
     <a href="/" style="color:var(--aero-blue-dark);text-decoration:none;font-size:11px;font-weight:700;background:rgba(255,255,255,0.7);border:1px solid rgba(47,158,216,0.15);padding:5px 9px;border-radius:6px 10px 6px 10px;">&#128421; PC</a>
-    <a href="/control" style="color:var(--aero-blue-dark);text-decoration:none;font-size:11px;font-weight:700;background:rgba(255,255,255,0.7);border:1px solid rgba(47,158,216,0.15);padding:5px 9px;border-radius:6px 10px 6px 10px;">&#127899; Control</a>
+    <a href="#" onclick="toggleDrawer();return false;" style="color:var(--aero-blue-dark);text-decoration:none;font-size:11px;font-weight:700;background:rgba(255,255,255,0.7);border:1px solid rgba(47,158,216,0.15);padding:5px 9px;border-radius:6px 10px 6px 10px;">&#127899; Control</a>
     <span id="goldBadge" class="gold-badge" style="display:none;"></span>
     <div class="status-dot" id="statusDot"></div>
   </div>
@@ -1062,7 +1062,7 @@ async function toggleDrawerEnabled(){drawerEnabled=!drawerEnabled;updateDrawerEn
 async function pushDrawer(){const p={enabled:drawerEnabled,overrides:drawerEnabled?drawerOverrides:{},severity:drawerEnabled?drawerSev:null,goldStage:drawerEnabled?drawerGold:null};try{await fetch('/api/control',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)});setTimeout(fetchDrawerControl,400)}catch(e){}}
 async function drawerReset(){await fetch('/api/control',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({reset:true})});drawerOverrides={};drawerSev=0.2;drawerGold=null;fetchDrawerControl()}
 function drawerPreset(n){const m={healthy:{spo2:97,respRate:16,hrv:52,fev1:95,fev1Fvc:0.82,chestExpand:6.2,hcsr:6.5,effortIndex:18,mpu:1.35,gsr:1.8,inmp:0.5,severity:0.05,gold:1},gold1:{spo2:95,respRate:19,hrv:42,fev1:85,fev1Fvc:0.68,chestExpand:5,hcsr:5.2,effortIndex:35,mpu:1.10,gsr:2.5,inmp:1.0,severity:0.2,gold:1},gold2:{spo2:93,respRate:22,hrv:34,fev1:62,fev1Fvc:0.58,chestExpand:3.8,hcsr:4.2,effortIndex:58,mpu:0.85,gsr:3.4,inmp:1.8,severity:0.4,gold:2},gold3:{spo2:88,respRate:28,hrv:22,fev1:38,fev1Fvc:0.42,chestExpand:2.5,hcsr:3.0,effortIndex:82,mpu:0.55,gsr:5.0,inmp:3.5,severity:0.7,gold:3},critical:{spo2:82,respRate:34,hrv:14,fev1:22,fev1Fvc:0.32,chestExpand:1.5,hcsr:1.8,effortIndex:95,mpu:0.30,gsr:6.8,inmp:5.2,severity:0.9,gold:4}}[n];if(!m)return;drawerEnabled=true;drawerSev=m.severity;drawerGold=m.gold;delete m.severity;delete m.gold;drawerOverrides={...m};updateDrawerEnabledUI();const a=document.getElementById('drawerSev'),b=document.getElementById('drawerSevVal'),c=document.getElementById('drawerGold');if(a)a.value=Math.round(drawerSev*100);if(b)b.textContent=Math.round(drawerSev*100)+'%';if(c)c.value=String(drawerGold);pushDrawer()}
-function toggleDrawer(){document.getElementById('controlDrawer').classList.toggle('open')}
+function toggleDrawer(){const d=document.getElementById('controlDrawer'); d.classList.toggle('open'); d.classList.toggle('pinned')}
 
 document.addEventListener('DOMContentLoaded', () => {
   connect();
