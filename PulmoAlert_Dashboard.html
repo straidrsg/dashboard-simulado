@@ -791,6 +791,58 @@
     .header h1 { font-size: 22px; }
     .logo { width: 42px; height: 42px; }
   }
+
+  /* =========================================================
+     CONTROL DRAWER - hover para desplegar
+     ========================================================= */
+  .control-drawer {
+    position: fixed; top: 0; right: 0; z-index: 300;
+    width: 380px; max-width: 88vw; height: 100vh; height: 100dvh;
+    display: flex; transform: translateX(calc(100% - 42px));
+    transition: transform 0.34s cubic-bezier(0.22,0.8,0.22,1);
+    filter: drop-shadow(-8px 0 20px rgba(0,80,160,0.15));
+  }
+  .control-drawer:hover, .control-drawer.open { transform: translateX(0); }
+  .control-drawer-handle {
+    width: 42px; flex-shrink: 0; cursor: pointer;
+    background: linear-gradient(180deg, #5bc0f8 0%, #2f9ed8 55%, #1a6fa8 100%);
+    color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+    border-right: 1px solid rgba(255,255,255,0.25); box-shadow: inset 0 1px 0 rgba(255,255,255,0.35);
+    writing-mode: vertical-rl; text-orientation: mixed; font-size: 12px; font-weight: 800; letter-spacing: 1.2px;
+    user-select: none;
+  }
+  .control-drawer-handle span.hint { font-size: 9px; font-weight: 600; opacity: 0.85; letter-spacing: 0.5px; }
+  .control-drawer-panel {
+    flex: 1; background: rgba(255,255,255,0.86); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+    overflow-y: auto; padding: 14px 12px 18px; border-left: 1px solid rgba(255,255,255,0.9);
+  }
+  .control-drawer-panel::-webkit-scrollbar { width: 6px; }
+  .control-drawer-panel::-webkit-scrollbar-thumb { background: rgba(47,158,216,0.3); border-radius: 6px; }
+  .drawer-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+  .drawer-head h3 { font-size: 13px; color: var(--aero-blue-dark); }
+  .drawer-head .close-x { width: 26px; height: 26px; border-radius: 8px; border: 1px solid rgba(47,158,216,0.15); background: rgba(255,255,255,0.7); cursor: pointer; display: grid; place-items: center; font-size: 14px; }
+  .drawer-switch { display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: rgba(255,255,255,0.65); border: 1px solid rgba(47,158,216,0.12); border-radius: 8px 10px 8px 10px; margin-bottom: 10px; }
+  .drawer-switch .sw { width: 44px; height: 24px; background: rgba(0,0,0,0.12); border-radius: 24px; position: relative; cursor: pointer; transition: 0.22s; flex-shrink: 0; border: 1px solid rgba(255,255,255,0.5); }
+  .drawer-switch .sw.on { background: linear-gradient(135deg,#4cb870,#2e9a52); }
+  .drawer-switch .sw::after { content: ''; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; background: #fff; border-radius: 50%; box-shadow: 0 1px 4px rgba(0,0,0,0.2); transition: 0.22s; }
+  .drawer-switch .sw.on::after { transform: translateX(20px); }
+  .drawer-presets { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 10px; }
+  .drawer-presets button { padding: 5px 8px; border-radius: 6px 9px 6px 9px; font-size: 10px; font-weight: 700; border: 1px solid rgba(47,158,216,0.15); background: rgba(255,255,255,0.75); color: var(--aero-blue-dark); cursor: pointer; }
+  .drawer-presets button.crit { border-color: rgba(226,85,85,0.25); color: #a83232; background: rgba(226,85,85,0.08); }
+  .drawer-sev { padding: 8px 10px; background: rgba(255,255,255,0.6); border: 1px solid rgba(47,158,216,0.1); border-radius: 8px; margin-bottom: 10px; }
+  .drawer-sev label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text-dim); }
+  .drawer-sev .row { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+  .drawer-sev input[type=range] { flex: 1; accent-color: var(--aero-blue); }
+  .drawer-group { margin-bottom: 10px; }
+  .drawer-group h4 { font-size: 10px; text-transform: uppercase; letter-spacing: 0.7px; color: var(--aero-blue-dark); margin-bottom: 6px; }
+  .drawer-ctrl { margin-bottom: 7px; }
+  .drawer-ctrl .head { display: flex; justify-content: space-between; font-size: 10px; font-weight: 700; margin-bottom: 2px; }
+  .drawer-ctrl .head span.val { color: var(--aero-blue-dark); }
+  .drawer-ctrl input[type=range] { width: 100%; accent-color: var(--aero-blue); height: 4px; }
+  .drawer-actions { display: flex; gap: 6px; margin-top: 10px; }
+  .drawer-actions button { flex: 1; padding: 7px; border-radius: 7px 10px 7px 10px; font-size: 11px; font-weight: 700; border: 1px solid rgba(47,158,216,0.15); cursor: pointer; }
+  .drawer-actions .primary { background: linear-gradient(135deg,#2f9ed8,#1a6fa8); color: #fff; border-color: transparent; }
+  .drawer-actions .ghost { background: rgba(255,255,255,0.7); color: var(--aero-blue-dark); }
 </style>
 </head>
 <body>
@@ -1688,14 +1740,103 @@ async function connect() {
 }
 
 // ============================================================
+// CONTROL DRAWER (integrado hover)
+// ============================================================
+const DRAWER_VARS = [
+  {k:'spo2', label:'SpO₂', unit:'%', min:75, max:99, step:1, healthy:97, g:'Vitales'},
+  {k:'respRate', label:'Frec. resp.', unit:'rpm', min:10, max:40, step:1, healthy:16, g:'Vitales'},
+  {k:'hrv', label:'HRV', unit:'ms', min:8, max:65, step:1, healthy:52, g:'Vitales'},
+  {k:'fev1', label:'FEV₁', unit:'% pred', min:18, max:98, step:1, healthy:95, g:'Respiratorio'},
+  {k:'fev1Fvc', label:'FEV₁/FVC', unit:'', min:0.28, max:0.84, step:0.01, healthy:0.82, g:'Respiratorio'},
+  {k:'chestExpand', label:'Exp. tor.', unit:'cm', min:1, max:7.5, step:0.1, healthy:6.2, g:'Respiratorio'},
+  {k:'hcsr', label:'HC-SR04', unit:'cm', min:1, max:8, step:0.1, healthy:6.5, g:'Respiratorio'},
+  {k:'effortIndex', label:'Esfuerzo', unit:'%', min:10, max:100, step:1, healthy:18, g:'Respiratorio'},
+  {k:'mpu', label:'MPU-6050', unit:'g', min:0.15, max:1.8, step:0.05, healthy:1.35, g:'Respiratorio'},
+  {k:'gsr', label:'GSR', unit:'µS', min:0.5, max:8, step:0.1, healthy:1.8, g:'Sensores'},
+  {k:'inmp', label:'INMP441', unit:'kHz', min:0.1, max:6.5, step:0.1, healthy:0.5, g:'Sensores'},
+];
+let drawerEnabled=false, drawerOverrides={}, drawerSev=0.2, drawerGold=null, drawerDragging=null, drawerDebounce=null;
+function buildDrawer(){
+  const wrap=document.getElementById('drawerGroups');
+  ['Vitales','Respiratorio','Sensores'].forEach(g=>{
+    const vars=DRAWER_VARS.filter(v=>v.g===g);
+    let h=`<div class="drawer-group"><h4>${g}</h4>`;
+    vars.forEach(v=>{
+      h+=`<div class="drawer-ctrl" data-k="${v.k}"><div class="head"><span>${v.label}</span><span class="val" id="dcur-${v.k}">—</span></div><input type="range" id="dsl-${v.k}" min="${v.min}" max="${v.max}" step="${v.step}" oninput="onDrawerSlider('${v.k}',this.value)" onmousedown="drawerDragging='${v.k}'" onmouseup="drawerDragging=null" ontouchstart="drawerDragging='${v.k}'" ontouchend="drawerDragging=null"></div>`;
+    });
+    h+=`</div>`; wrap.insertAdjacentHTML('beforeend',h);
+  });
+}
+function updateDrawerEnabledUI(){
+  const sw=document.getElementById('drawerSw'); if(sw) sw.className='sw'+(drawerEnabled?' on':'');
+  document.getElementById('drawerMode').textContent=drawerEnabled?'Manual':'Automático';
+  document.getElementById('drawerGroups').style.opacity=drawerEnabled?'1':'0.45';
+  document.getElementById('drawerGroups').style.pointerEvents=drawerEnabled?'auto':'none';
+  document.getElementById('drawerSev').disabled=!drawerEnabled;
+  document.getElementById('drawerGold').disabled=!drawerEnabled;
+}
+async function fetchDrawerControl(){
+  try{
+    const r=await fetch('/api/control'); const j=await r.json(); const ctrl=j.control||j;
+    drawerEnabled=!!ctrl.enabled; drawerOverrides=ctrl.overrides||{}; drawerSev=ctrl.severity; drawerGold=ctrl.goldStage;
+    updateDrawerEnabledUI();
+    if(drawerSev!=null){ document.getElementById('drawerSev').value=Math.round(drawerSev*100); document.getElementById('drawerSevVal').textContent=Math.round(drawerSev*100)+'%'; }
+    document.getElementById('drawerGold').value=drawerGold?String(drawerGold):'';
+    DRAWER_VARS.forEach(v=>{
+      const cur=j.current?j.current[v.k]:undefined;
+      const disp=(drawerEnabled && drawerOverrides[v.k]!=null)?drawerOverrides[v.k]:cur;
+      const el=document.getElementById('dcur-'+v.k); if(el&&disp!=null) el.textContent=(Math.round(disp*100)/100)+v.unit;
+      const sl=document.getElementById('dsl-'+v.k);
+      if(sl && drawerDragging!==v.k){ const val=(drawerEnabled && drawerOverrides[v.k]!=null)?drawerOverrides[v.k]:(cur!=null?cur:v.healthy); sl.value=val; }
+    });
+  }catch(e){}
+}
+function onDrawerSlider(k,val){ drawerOverrides[k]=parseFloat(val); const u=DRAWER_VARS.find(v=>v.k===k).unit; document.getElementById('dcur-'+k).textContent=val+u; scheduleDrawerPush(); }
+function onDrawerSev(v){ drawerSev=parseInt(v)/100; document.getElementById('drawerSevVal').textContent=v+'%'; scheduleDrawerPush(); }
+function onDrawerGold(v){ drawerGold=v?parseInt(v):null; scheduleDrawerPush(); }
+function scheduleDrawerPush(){ if(!drawerEnabled) return; clearTimeout(drawerDebounce); drawerDebounce=setTimeout(pushDrawer,180); }
+async function toggleDrawerEnabled(){ drawerEnabled=!drawerEnabled; updateDrawerEnabledUI(); await pushDrawer(); }
+async function pushDrawer(){
+  const payload={enabled:drawerEnabled, overrides:drawerEnabled?drawerOverrides:{}, severity:drawerEnabled?drawerSev:null, goldStage:drawerEnabled?drawerGold:null};
+  try{ await fetch('/api/control',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)}); setTimeout(fetchDrawerControl,400);}catch(e){}
+}
+async function drawerReset(){ await fetch('/api/control',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({reset:true})}); drawerOverrides={}; drawerSev=0.2; drawerGold=null; fetchDrawerControl(); }
+function drawerPreset(name){
+  const p={healthy:{spo2:97,respRate:16,hrv:52,fev1:95,fev1Fvc:0.82,chestExpand:6.2,hcsr:6.5,effortIndex:18,mpu:1.35,gsr:1.8,inmp:0.5,severity:0.05,gold:1},gold1:{spo2:95,respRate:19,hrv:42,fev1:85,fev1Fvc:0.68,chestExpand:5,hcsr:5.2,effortIndex:35,mpu:1.10,gsr:2.5,inmp:1.0,severity:0.2,gold:1},gold2:{spo2:93,respRate:22,hrv:34,fev1:62,fev1Fvc:0.58,chestExpand:3.8,hcsr:4.2,effortIndex:58,mpu:0.85,gsr:3.4,inmp:1.8,severity:0.4,gold:2},gold3:{spo2:88,respRate:28,hrv:22,fev1:38,fev1Fvc:0.42,chestExpand:2.5,hcsr:3.0,effortIndex:82,mpu:0.55,gsr:5.0,inmp:3.5,severity:0.7,gold:3},critical:{spo2:82,respRate:34,hrv:14,fev1:22,fev1Fvc:0.32,chestExpand:1.5,hcsr:1.8,effortIndex:95,mpu:0.30,gsr:6.8,inmp:5.2,severity:0.9,gold:4}}[name];
+  if(!p) return; drawerEnabled=true; drawerSev=p.severity; drawerGold=p.gold; delete p.severity; delete p.gold; drawerOverrides={...p}; updateDrawerEnabledUI(); document.getElementById('drawerSev').value=Math.round(drawerSev*100); document.getElementById('drawerSevVal').textContent=Math.round(drawerSev*100)+'%'; document.getElementById('drawerGold').value=String(drawerGold); pushDrawer();
+}
+function toggleDrawer(){ document.getElementById('controlDrawer').classList.toggle('open'); }
+
+// ============================================================
 // BOOT
 // ============================================================
 document.addEventListener('DOMContentLoaded', () => {
   initCharts();
   connect();
   setInterval(tick, 350);
+  buildDrawer(); fetchDrawerControl(); setInterval(fetchDrawerControl, 1400);
+  const h=document.getElementById('controlDrawerHandle'); if(h) h.addEventListener('click', toggleDrawer);
 });
 </script>
+
+<div class="control-drawer" id="controlDrawer">
+  <div class="control-drawer-handle" id="controlDrawerHandle">🎛️ CONTROL <span class="hint">hover / click</span></div>
+  <div class="control-drawer-panel">
+    <div class="drawer-head"><h3>Panel de Control</h3><button class="close-x" onclick="toggleDrawer()">✕</button></div>
+    <div class="drawer-switch"><div class="sw" id="drawerSw" onclick="toggleDrawerEnabled()"></div><div><div style="font-size:11px;font-weight:800;" id="drawerMode">Automático</div><div style="font-size:9px;color:var(--text-dim);">Hover para desplegar · click para fijar</div></div></div>
+    <div class="drawer-presets">
+      <button onclick="drawerPreset('healthy')">Sano</button><button onclick="drawerPreset('gold1')">GOLD 1</button><button onclick="drawerPreset('gold2')">GOLD 2</button><button onclick="drawerPreset('gold3')">GOLD 3</button><button class="crit" onclick="drawerPreset('critical')">Crítico</button>
+    </div>
+    <div class="drawer-sev">
+      <label>Severidad global</label>
+      <div class="row"><input type="range" id="drawerSev" min="0" max="100" value="20" oninput="onDrawerSev(this.value)"><span id="drawerSevVal" style="font-size:11px;font-weight:800;min-width:36px;text-align:right;">20%</span></div>
+      <div class="row" style="margin-top:6px;"><select id="drawerGold" onchange="onDrawerGold(this.value)" style="flex:1;padding:5px 6px;border-radius:6px;border:1px solid rgba(47,158,216,0.12);font-size:11px;font-weight:600;"><option value="">GOLD Auto</option><option value="1">GOLD 1 — Leve</option><option value="2">GOLD 2 — Moderado</option><option value="3">GOLD 3 — Grave</option><option value="4">GOLD 4 — Muy grave</option></select></div>
+    </div>
+    <div id="drawerGroups"></div>
+    <div class="drawer-actions"><button class="primary" onclick="pushDrawer()">Aplicar</button><button class="ghost" onclick="drawerReset()">Reset</button></div>
+    <div style="font-size:9px;color:var(--text-dim);margin-top:8px;">También disponible en <a href="/control" style="color:var(--aero-blue);">/control</a> · <a href="/mobile" style="color:var(--aero-blue);">móvil</a></div>
+  </div>
+</div>
 
 </body>
 </html>
