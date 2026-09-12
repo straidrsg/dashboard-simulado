@@ -513,6 +513,18 @@ HTML_CONTROL = os.path.join(BASE_DIR, "PulmoAlert_Control.html")
 
 class SensorAPIHandler(http.server.SimpleHTTPRequestHandler):
 
+    def do_HEAD(self):
+        parsed = urlparse(self.path)
+        path = parsed.path
+        if path in ("/", "/mobile", "/control", "/api/data", "/api/healthy", "/api/control", "/api/esp32-status"):
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html; charset=utf-8" if path in ("/", "/mobile", "/control") else "application/json; charset=utf-8")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.send_header("Content-Length", "0")
+            self.end_headers()
+        else:
+            self.send_error(404)
+
     def do_GET(self):
         parsed = urlparse(self.path)
         path = parsed.path

@@ -34,7 +34,7 @@ def application(environ, start_response):
             start_response("404 Not Found", [("Content-Type", "text/plain")])
             return [b"Archivo no encontrado"]
 
-    if method == "GET" and path == "/api/data":
+    if method in ("GET", "HEAD") and path == "/api/data":
         data = generator.get_data()
         if real_bridge.is_active:
             data["patient"] = real_bridge.blend_patient(data["patient"])
@@ -42,19 +42,23 @@ def application(environ, start_response):
             data["source"] = "esp32_real"
         else:
             data["source"] = "simulation"
-        return respond("200 OK", "application/json; charset=utf-8", json.dumps(data, ensure_ascii=False))
+        body = json.dumps(data, ensure_ascii=False).encode("utf-8")
+        if method == "HEAD":
+            start_response("200 OK", [("Content-Type", "application/json; charset=utf-8"), ("Content-Length", str(len(body))), ("Access-Control-Allow-Origin", "*")])
+            return [b""]
+        return respond("200 OK", "application/json; charset=utf-8", body)
 
-    if method == "GET" and path == "/api/healthy":
+    if method in ("GET", "HEAD") and path == "/api/healthy":
         return respond("200 OK", "application/json; charset=utf-8", json.dumps(HEALTHY))
 
-    if method == "GET" and path == "/api/esp32-status":
+    if method in ("GET", "HEAD") and path == "/api/esp32-status":
         return respond("200 OK", "application/json; charset=utf-8", json.dumps({
             "connected": real_bridge.is_active,
             "last_rx": real_bridge.last_rx_time,
             "esp32_ip": real_bridge.esp32_ip,
         }))
 
-    if method == "GET" and path == "/api/control":
+    if method in ("GET", "HEAD") and path == "/api/control":
         return respond("200 OK", "application/json; charset=utf-8", json.dumps({
             "control": generator.get_control_state(),
             "current": generator.patient,
@@ -97,13 +101,31 @@ def application(environ, start_response):
         ])
         return [b""]
 
-    if method == "GET" and path == "/":
+    if method in ("GET", "HEAD") and path == "/":
+        if method == "HEAD":
+            try:
+                sz = os.path.getsize(HTML_FILE)
+                start_response("200 OK", [("Content-Type", "text/html; charset=utf-8"), ("Content-Length", str(sz)), ("Cache-Control", "no-cache")])
+                return [b""]
+            except: pass
         return serve_file(HTML_FILE)
 
-    if method == "GET" and path == "/mobile":
+    if method in ("GET", "HEAD") and path == "/mobile":
+        if method == "HEAD":
+            try:
+                sz = os.path.getsize(HTML_MOBILE)
+                start_response("200 OK", [("Content-Type", "text/html; charset=utf-8"), ("Content-Length", str(sz)), ("Cache-Control", "no-cache")])
+                return [b""]
+            except: pass
         return serve_file(HTML_MOBILE)
 
-    if method == "GET" and path == "/control":
+    if method in ("GET", "HEAD") and path == "/control":
+        if method == "HEAD":
+            try:
+                sz = os.path.getsize(HTML_CONTROL)
+                start_response("200 OK", [("Content-Type", "text/html; charset=utf-8"), ("Content-Length", str(sz)), ("Cache-Control", "no-cache")])
+                return [b""]
+            except: pass
         return serve_file(HTML_CONTROL)
 
     start_response("404 Not Found", [("Content-Type", "text/plain")])
